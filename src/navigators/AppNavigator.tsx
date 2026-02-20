@@ -9,8 +9,7 @@ import {
 } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
-import { Appearance, useColorScheme } from "react-native";
-import * as Screens from "../screens";
+import { useColorScheme } from "react-native";
 import { HomeNavigator } from "./HomeNavigator";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -33,9 +32,7 @@ import {
  */
 
 type RootStackParamList = {
-  Home: undefined;
-  Settings: undefined;
-  // 🔥 Your screens go here
+  HomeTabs: undefined;
 };
 
 declare global {
@@ -44,19 +41,16 @@ declare global {
   }
 }
 
-// Documentation: https://reactnavigation.org/docs/stack-navigator/
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppStack = () => {
   return (
-    <Stack.Navigator initialRouteName={"Home"}>
+    <Stack.Navigator initialRouteName={"HomeTabs"}>
       <Stack.Screen
-        name="HomeStack"
+        name="HomeTabs"
         component={HomeNavigator}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="Settings" component={Screens.SettingsScreen} />
-      {/** 🔥 Your screens go here */}
     </Stack.Navigator>
   );
 };

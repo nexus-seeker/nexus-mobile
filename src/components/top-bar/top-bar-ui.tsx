@@ -37,7 +37,7 @@ export function TopBarSettingsButton() {
       icon="cog"
       mode="contained-tonal"
       onPress={() => {
-        navigation.navigate("Settings");
+        navigation.navigate("HomeTabs");
       }}
     />
   );

@@ -1,10 +1,12 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import React from "react";
-import { TopBar } from "../components/top-bar/top-bar-feature";
-import { HomeScreen } from "../screens/HomeScreen";
 import MaterialCommunityIcon from "@expo/vector-icons/MaterialCommunityIcons";
-import { useTheme } from "react-native-paper";
-import BlankScreen from "../screens/BlankScreen";
+import {
+  ChatScreen,
+  HistoryScreen,
+  PolicyScreen,
+  ProfileScreen,
+} from "../screens";
 
 const Tab = createBottomTabNavigator();
 
@@ -15,37 +17,55 @@ const Tab = createBottomTabNavigator();
  * More info: https://reactnavigation.org/docs/bottom-tab-navigator/
  */
 export function HomeNavigator() {
-  const theme = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        header: () => <TopBar />,
+        headerTitleAlign: "left",
+        tabBarHideOnKeyboard: true,
         tabBarIcon: ({ focused, color, size }) => {
           switch (route.name) {
-            case "Home":
+            case "Chat":
               return (
                 <MaterialCommunityIcon
-                  name={focused ? "home" : "home-outline"}
+                  name={focused ? "message" : "message-outline"}
                   size={size}
                   color={color}
                 />
               );
-            case "Blank":
+            case "Policy":
               return (
                 <MaterialCommunityIcon
-                  name={
-                    focused ? "application-edit" : "application-edit-outline"
-                  }
+                  name={focused ? "shield-check" : "shield-check-outline"}
                   size={size}
                   color={color}
                 />
               );
+            case "History":
+              return (
+                <MaterialCommunityIcon
+                  name={focused ? "history" : "history"}
+                  size={size}
+                  color={color}
+                />
+              );
+            case "Profile":
+              return (
+                <MaterialCommunityIcon
+                  name={focused ? "account-circle" : "account-circle-outline"}
+                  size={size}
+                  color={color}
+                />
+              );
+            default:
+              return null;
           }
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Blank" component={BlankScreen} />
+      <Tab.Screen name="Chat" component={ChatScreen} />
+      <Tab.Screen name="Policy" component={PolicyScreen} />
+      <Tab.Screen name="History" component={HistoryScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }

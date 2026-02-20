@@ -18,6 +18,7 @@ import {
 } from "react-native-paper";
 import { AppNavigator } from "./src/navigators/AppNavigator";
 import { ClusterProvider } from "./src/components/cluster/cluster-data-access";
+import { PolicyProvider } from "./src/contexts/PolicyContext";
 
 const queryClient = new QueryClient();
 
@@ -66,7 +67,9 @@ export default function App() {
                   : CombinedDefaultTheme
               }
             >
-              <AppNavigator />
+              <PolicyProvider>
+                <AppNavigator />
+              </PolicyProvider>
             </PaperProvider>
           </SafeAreaView>
         </ConnectionProvider>
