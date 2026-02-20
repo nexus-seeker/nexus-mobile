@@ -21,6 +21,9 @@ import {
   type PolicySyncResult,
 } from "../services/policy/policy-vault-client";
 import { loadPolicy, savePolicy } from "../services/policy/policy-storage";
+import { useAuthorization } from "../utils/useAuthorization";
+import { useConnection } from "../utils/ConnectionProvider";
+import { useMobileWallet } from "../utils/useMobileWallet";
 
 type SavePolicyInput = {
   dailyLimitSol: number;
@@ -50,6 +53,10 @@ const PolicyContext = createContext<PolicyContextValue | undefined>(undefined);
 const policyVaultClient = createPolicyVaultClient();
 
 export function PolicyProvider({ children }: { children: ReactNode }) {
+  const { selectedAccount } = useAuthorization();
+  const { connection } = useConnection();
+  const { signAndSendTransaction } = useMobileWallet();
+
   const [policy, setPolicy] = useState<PolicyState>(DEFAULT_POLICY);
   const [isReady, setIsReady] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -65,6 +72,24 @@ export function PolicyProvider({ children }: { children: ReactNode }) {
 
         if (isMounted) {
           setPolicy(storedPolicy);
+        }
+
+        if (selectedAccount) {
+          try {
+            const onChainPolicy = await policyVaultClient.fetchPolicy({
+              authorityPublicKey: selectedAccount.publicKey.toBase58(),
+              connection,
+            });
+
+            if (onChainPolicy && isMounted) {
+              setPolicy(onChainPolicy);
+              await savePolicy(onChainPolicy);
+            }
+          } catch (fetchError) {
+            if (isMounted) {
+              setLastError(toUserMessage(fetchError));
+            }
+          }
         }
       } catch (error) {
         if (isMounted) {
@@ -82,7 +107,7 @@ export function PolicyProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [connection, selectedAccount]);
 
   const savePolicyWithBiometric = useCallback(
     async (input: SavePolicyInput): Promise<SavePolicyResult> => {
@@ -111,8 +136,26 @@ export function PolicyProvider({ children }: { children: ReactNode }) {
         setPolicy(normalizedPolicy);
         await savePolicy(normalizedPolicy);
 
+        if (!selectedAccount) {
+          const message =
+            "Wallet not connected. Policy saved locally, but on-chain sync was rejected.";
+          setLastError(message);
+
+          return {
+            ok: false,
+            synced: false,
+            error: message,
+            syncResult: null,
+          };
+        }
+
         try {
-          const syncResult = await policyVaultClient.upsertPolicy(normalizedPolicy);
+          const syncResult = await policyVaultClient.upsertPolicy({
+            authorityPublicKey: selectedAccount.publicKey.toBase58(),
+            connection,
+            signAndSendTransaction,
+            policy: normalizedPolicy,
+          });
           setLastSyncSignature(syncResult.signature);
 
           return {
@@ -136,7 +179,7 @@ export function PolicyProvider({ children }: { children: ReactNode }) {
         setIsSaving(false);
       }
     },
-    [policy.dailySpentSol]
+    [connection, policy.dailySpentSol, selectedAccount, signAndSendTransaction]
   );
 
   const evaluateAction = useCallback(

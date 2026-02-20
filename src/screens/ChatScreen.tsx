@@ -1,8 +1,19 @@
 import React, { useMemo, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
-import { Button, Card, Chip, Text, TextInput } from "react-native-paper";
-import { parseSwapIntent } from "../features/agent/intent-parser";
+import {
+  Button,
+  Card,
+  Chip,
+  Dialog,
+  Portal,
+  Text,
+  TextInput,
+} from "react-native-paper";
 import { usePolicy } from "../contexts/PolicyContext";
+import {
+  requestAgentPlan,
+  type AgentSwapAction,
+} from "../services/agent/agent-api";
 
 type ChatMessage = {
   id: string;
@@ -12,9 +23,18 @@ type ChatMessage = {
 
 const EXAMPLE_INTENT = "Swap 0.1 SOL to USDC";
 
+type PendingApproval = {
+  action: AgentSwapAction;
+  reason: string;
+};
+
 export function ChatScreen() {
   const [intent, setIntent] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(
+    null
+  );
   const { evaluateAction, policy } = usePolicy();
 
   const remainingSol = useMemo(
@@ -22,44 +42,85 @@ export function ChatScreen() {
     [policy.dailyLimitSol, policy.dailySpentSol]
   );
 
-  function submitIntent() {
+  function pushMessage(role: ChatMessage["role"], text: string) {
+    setMessages((current) => [
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        role,
+        text,
+      },
+      ...current,
+    ]);
+  }
+
+  async function submitIntent() {
     const trimmedIntent = intent.trim();
 
-    if (!trimmedIntent) {
+    if (!trimmedIntent || isSubmitting) {
       return;
     }
 
-    const userMessage: ChatMessage = {
-      id: `${Date.now()}-user`,
-      role: "user",
-      text: trimmedIntent,
-    };
+    setIsSubmitting(true);
+    setIntent("");
 
-    const parsed = parseSwapIntent(trimmedIntent);
-    let agentText =
-      "I could not parse that intent yet. Try: 'Swap 0.1 SOL to USDC'.";
+    pushMessage("user", trimmedIntent);
 
-    if (parsed) {
-      const evaluation = evaluateAction({
-        amountSol: parsed.amountSol,
-        protocol: parsed.protocol,
-      });
+    const plan = await requestAgentPlan({ intent: trimmedIntent });
+    pushMessage("agent", plan.reasoning);
 
-      if (evaluation.allowed) {
-        agentText = `Policy check passed. Ready to route ${parsed.amountSol} SOL -> ${parsed.toToken} via ${parsed.protocol}.`;
-      } else {
-        agentText = `Policy blocked this action: ${evaluation.reason ?? "Unknown policy reason."}`;
-      }
+    if (!plan.action) {
+      setIsSubmitting(false);
+      return;
     }
 
-    const agentMessage: ChatMessage = {
-      id: `${Date.now()}-agent`,
-      role: "agent",
-      text: agentText,
-    };
+    const evaluation = evaluateAction({
+      amountSol: plan.action.amountSol,
+      protocol: plan.action.protocol,
+    });
 
-    setMessages((current) => [agentMessage, userMessage, ...current]);
-    setIntent("");
+    if (evaluation.allowed) {
+      pushMessage(
+        "agent",
+        `Policy check passed. Ready to route ${plan.action.amountSol} SOL -> ${plan.action.toToken} via ${plan.action.protocol}.`
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
+    const reason =
+      evaluation.reason ?? "Action is outside your current policy constraints.";
+
+    pushMessage("agent", `Approval required: ${reason}`);
+    setPendingApproval({
+      action: plan.action,
+      reason,
+    });
+    setIsSubmitting(false);
+  }
+
+  function cancelApproval() {
+    if (!pendingApproval) {
+      return;
+    }
+
+    pushMessage("agent", "Approval cancelled. No transaction submitted.");
+    setPendingApproval(null);
+  }
+
+  function approveOnce() {
+    if (!pendingApproval) {
+      return;
+    }
+
+    pushMessage(
+      "agent",
+      `Approval accepted once. Execution path unlocked for ${pendingApproval.action.amountSol} SOL -> ${pendingApproval.action.toToken}.`
+    );
+    pushMessage(
+      "agent",
+      "Execution submission is wired next in M2 with signed on-chain receipt flow."
+    );
+    setPendingApproval(null);
   }
 
   return (
@@ -87,7 +148,13 @@ export function ChatScreen() {
           placeholder={EXAMPLE_INTENT}
           style={styles.input}
         />
-        <Button mode="contained" onPress={submitIntent} style={styles.sendButton}>
+        <Button
+          mode="contained"
+          onPress={submitIntent}
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          style={styles.sendButton}
+        >
           Send
         </Button>
       </View>
@@ -114,6 +181,27 @@ export function ChatScreen() {
           </Card>
         }
       />
+
+      <Portal>
+        <Dialog visible={Boolean(pendingApproval)} onDismiss={cancelApproval}>
+          <Dialog.Title>Approval Required</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">{pendingApproval?.reason}</Text>
+            {pendingApproval ? (
+              <Text variant="bodySmall" style={styles.modalDetails}>
+                Proposed action: {pendingApproval.action.amountSol} SOL {"->"}{" "}
+                {pendingApproval.action.toToken}
+              </Text>
+            ) : null}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={cancelApproval}>Cancel</Button>
+            <Button mode="contained" onPress={approveOnce}>
+              Approve once
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
@@ -155,5 +243,9 @@ const styles = StyleSheet.create({
   emptyState: {
     marginTop: 24,
     backgroundColor: "#f8fafc",
+  },
+  modalDetails: {
+    marginTop: 8,
+    color: "#475569",
   },
 });
