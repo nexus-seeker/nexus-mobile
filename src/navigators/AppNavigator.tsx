@@ -11,6 +11,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { useColorScheme } from "react-native";
 import { HomeNavigator } from "./HomeNavigator";
+import { WalletConnectScreen } from "../screens/WalletConnectScreen";
 import { StatusBar } from "expo-status-bar";
 import {
   MD3DarkTheme,
@@ -32,12 +33,13 @@ import {
  */
 
 type RootStackParamList = {
+  WalletConnect: undefined;
   HomeTabs: undefined;
 };
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }
 
@@ -45,7 +47,17 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppStack = () => {
   return (
-    <Stack.Navigator initialRouteName={"HomeTabs"}>
+    <Stack.Navigator initialRouteName={"WalletConnect"}>
+      <Stack.Screen
+        name="WalletConnect"
+        options={{ headerShown: false }}
+      >
+        {(props) => (
+          <WalletConnectScreen
+            onConnected={() => props.navigation.replace('HomeTabs')}
+          />
+        )}
+      </Stack.Screen>
       <Stack.Screen
         name="HomeTabs"
         component={HomeNavigator}
@@ -56,7 +68,7 @@ const AppStack = () => {
 };
 
 export interface NavigationProps
-  extends Partial<React.ComponentProps<typeof NavigationContainer>> {}
+  extends Partial<React.ComponentProps<typeof NavigationContainer>> { }
 
 export const AppNavigator = (props: NavigationProps) => {
   const colorScheme = useColorScheme();
