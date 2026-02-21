@@ -90,4 +90,33 @@ describe('openAgentStream', () => {
     expect(xhr.abort).toHaveBeenCalledTimes(1);
     expect(onError).not.toHaveBeenCalled();
   });
+
+  it('parses CRLF-framed events in XMLHttpRequest fallback', () => {
+    class MockXHR {
+      readyState = 3;
+      status = 200;
+      responseText = '';
+      onreadystatechange: (() => void) | null = null;
+      onprogress: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      open = jest.fn();
+      setRequestHeader = jest.fn();
+      send = jest.fn();
+      abort = jest.fn();
+    }
+
+    const xhr = new MockXHR();
+    (globalThis as any).XMLHttpRequest = jest.fn(() => xhr);
+
+    const onEvent = jest.fn();
+
+    openAgentStream('run-crlf', { onEvent, onError: jest.fn() });
+
+    xhr.responseText = 'data: {"type":"step","node":"crlf","label":"L","status":"running"}\r\n\r\n';
+    xhr.onprogress?.();
+
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'step', node: 'crlf' }),
+    );
+  });
 });

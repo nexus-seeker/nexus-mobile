@@ -82,7 +82,13 @@ export function useAgentRun() {
         setError(null);
     }, [stopActiveRun]);
 
-    useEffect(() => () => stopActiveRun(), [stopActiveRun]);
+    useEffect(() => {
+        return () => {
+            const activeRunToken = runTokenRef.current;
+            runTokenRef.current += 1;
+            stopActiveRun(activeRunToken);
+        };
+    }, [stopActiveRun]);
 
     // ─── Execute Intent ───────────────────────────────────────────
 

@@ -144,7 +144,7 @@ export function openAgentStream(
       return;
     }
 
-    const frames = chunk.split('\n\n');
+    const frames = chunk.split(/\r?\n\r?\n/);
     cursor += chunk.length;
 
     const tail = frames.pop() ?? '';
@@ -152,7 +152,7 @@ export function openAgentStream(
 
     for (const frame of frames) {
       const data = frame
-        .split('\n')
+        .split(/\r?\n/)
         .filter((line: string) => line.startsWith('data:'))
         .map((line: string) => line.slice(5).trimStart())
         .join('\n');

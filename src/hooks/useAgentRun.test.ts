@@ -225,4 +225,32 @@ describe('useAgentRun SSE lifecycle', () => {
     unmount();
     expect(close).toHaveBeenCalledTimes(2);
   });
+
+  it('does not start stream when unmounted before executeAgent resolves', async () => {
+    let resolveExecute!: (value: { runId: string; steps: StepEvent[] }) => void;
+    const executePromise = new Promise<{ runId: string; steps: StepEvent[] }>((resolve) => {
+      resolveExecute = resolve;
+    });
+
+    (executeAgent as jest.Mock).mockReturnValue(executePromise);
+    const close = jest.fn();
+    (openAgentStream as jest.Mock).mockImplementation(() => close);
+
+    const { result, unmount } = renderHook(() => useAgentRun());
+
+    let runPromise!: Promise<void>;
+    act(() => {
+      runPromise = result.current.executeIntent('late execute response');
+    });
+
+    unmount();
+
+    await act(async () => {
+      resolveExecute({ runId: 'run-late', steps: [] });
+      await runPromise;
+    });
+
+    expect(openAgentStream).not.toHaveBeenCalled();
+    expect(close).not.toHaveBeenCalled();
+  });
 });
