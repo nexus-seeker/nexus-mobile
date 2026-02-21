@@ -1,4 +1,135 @@
-import { openAgentStream } from './agent-api';
+import {
+  API_BASE_URL,
+  executeAgent,
+  fetchPolicy,
+  fetchReceipts,
+  getSSEUrl,
+  openAgentStream,
+  updatePolicy,
+} from './agent-api';
+
+describe('agent-api contract', () => {
+  beforeEach(() => {
+    (globalThis as any).fetch = jest.fn();
+  });
+
+  afterEach(() => {
+    delete (globalThis as any).fetch;
+    jest.clearAllMocks();
+  });
+
+  it('executeAgent posts intent and pubkey and returns execute response', async () => {
+    const response = { runId: 'run-1', steps: [{ type: 'step', node: 'n1' }] };
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(response),
+    });
+
+    await expect(executeAgent('swap usdc to sol', 'wallet-1')).resolves.toEqual(response);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/agent/execute`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ intent: 'swap usdc to sol', pubkey: 'wallet-1' }),
+      }),
+    );
+  });
+
+  it('executeAgent throws with status when request fails', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 503 });
+
+    await expect(executeAgent('swap', 'wallet-1')).rejects.toThrow(
+      'Agent execute failed: 503',
+    );
+  });
+
+  it('fetchPolicy requests encoded pubkey and returns policy payload', async () => {
+    const policy = {
+      exists: true,
+      owner: 'owner-1',
+      dailyMaxLamports: 1,
+      currentSpend: 0,
+      lastResetTs: 123,
+      allowedProtocols: ['jupiter'],
+      nextReceiptId: 2,
+      isActive: true,
+    };
+
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ policy }),
+    });
+
+    await expect(fetchPolicy('wallet/with space')).resolves.toEqual(policy);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/policy?pubkey=wallet%2Fwith%20space`,
+      expect.any(Object),
+    );
+  });
+
+  it('fetchPolicy throws with status when request fails', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 401 });
+
+    await expect(fetchPolicy('wallet-1')).rejects.toThrow('Policy fetch failed: 401');
+  });
+
+  it('updatePolicy posts update payload and returns unsigned transaction', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ unsignedTx: 'base64-tx' }),
+    });
+
+    await expect(updatePolicy('wallet-1', 999, ['jupiter'], true)).resolves.toBe(
+      'base64-tx',
+    );
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/policy/update`,
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          pubkey: 'wallet-1',
+          dailyMaxLamports: 999,
+          allowedProtocols: ['jupiter'],
+          isActive: true,
+        }),
+      }),
+    );
+  });
+
+  it('updatePolicy throws with status when request fails', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 500 });
+
+    await expect(updatePolicy('wallet-1', 999, ['jupiter'], true)).rejects.toThrow(
+      'Policy update failed: 500',
+    );
+  });
+
+  it('fetchReceipts requests encoded pubkey and returns receipts array', async () => {
+    const receipts = [{ address: 'addr-1' }, { address: 'addr-2' }];
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ receipts }),
+    });
+
+    await expect(fetchReceipts('wallet/with space')).resolves.toEqual(receipts);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/receipts?pubkey=wallet%2Fwith%20space`,
+      expect.any(Object),
+    );
+  });
+
+  it('fetchReceipts throws with status when request fails', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 429 });
+
+    await expect(fetchReceipts('wallet-1')).rejects.toThrow('Receipts fetch failed: 429');
+  });
+
+  it('getSSEUrl builds stream url from api base', () => {
+    expect(getSSEUrl('run-42')).toBe(`${API_BASE_URL}/agent/run-42/stream`);
+  });
+});
 
 describe('openAgentStream', () => {
   afterEach(() => {
