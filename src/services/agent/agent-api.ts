@@ -29,6 +29,11 @@ export interface AgentRunResult {
   };
 }
 
+export interface AgentExecuteResponse {
+  runId: string;
+  steps?: StepEvent[];
+}
+
 export interface PolicyDto {
   exists: boolean;
   owner: string;
@@ -59,7 +64,7 @@ const headers = {
 export async function executeAgent(
   intent: string,
   pubkey: string,
-): Promise<AgentRunResult> {
+): Promise<AgentExecuteResponse> {
   const response = await fetch(`${API_BASE_URL}/agent/execute`, {
     method: 'POST',
     headers,
@@ -71,6 +76,46 @@ export async function executeAgent(
   }
 
   return response.json();
+}
+
+export function openAgentStream(
+  runId: string,
+  callbacks: {
+    onEvent: (event: StepEvent) => void;
+    onError: (error: Error) => void;
+  },
+): () => void {
+  const EventSourceCtor = (globalThis as any).EventSource;
+  if (!EventSourceCtor) {
+    throw new Error('SSE is not supported in this environment');
+  }
+
+  const source = new EventSourceCtor(getSSEUrl(runId), {
+    headers: {
+      'x-api-key': API_KEY,
+    },
+  });
+
+  const handleMessage = (raw: { data?: string }) => {
+    if (!raw?.data) {
+      return;
+    }
+    try {
+      const event = JSON.parse(raw.data) as StepEvent;
+      callbacks.onEvent(event);
+    } catch {
+      callbacks.onError(new Error('Invalid SSE payload'));
+    }
+  };
+
+  source.onmessage = handleMessage;
+  source.onerror = () => {
+    callbacks.onError(new Error('Agent stream disconnected'));
+  };
+
+  return () => {
+    source.close();
+  };
 }
 
 export async function fetchPolicy(pubkey: string): Promise<PolicyDto> {
