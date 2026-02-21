@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import {
   Button,
@@ -17,6 +17,7 @@ const EXAMPLE_INTENT = 'Swap 0.1 SOL to USDC';
 export function ChatScreen() {
   const { selectedAccount } = useAuthorization();
   const [intent, setIntent] = useState('');
+  const [isApprovalSheetVisible, setIsApprovalSheetVisible] = useState(false);
   const {
     runState,
     steps,
@@ -43,6 +44,12 @@ export function ChatScreen() {
   const isRunning = runState === 'running';
   const showApproval = runState === 'awaiting_approval';
   const isSigning = runState === 'signing';
+
+  useEffect(() => {
+    if (!showApproval) {
+      setIsApprovalSheetVisible(false);
+    }
+  }, [showApproval]);
 
   return (
     <View style={styles.screen}>
@@ -111,7 +118,7 @@ export function ChatScreen() {
           <Button
             mode="contained"
             icon="fingerprint"
-            onPress={() => { }}
+            onPress={() => setIsApprovalSheetVisible(true)}
             style={styles.approveButton}
             contentStyle={styles.approveButtonContent}
           >
@@ -169,10 +176,12 @@ export function ChatScreen() {
 
       {/* Approval Sheet */}
       <ApprovalSheet
-        visible={showApproval}
+        visible={showApproval && isApprovalSheetVisible}
         result={result}
         isLoading={isSigning}
-        onApprove={approveTransaction}
+        onApprove={() => {
+          void approveTransaction();
+        }}
         onCancel={resetRun}
       />
     </View>
