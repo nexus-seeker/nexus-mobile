@@ -138,4 +138,91 @@ describe('useAgentRun SSE lifecycle', () => {
     expect(result.current.runState).toBe('error');
     expect(result.current.error).toContain('timed out');
   });
+
+  it('ignores stale stream callbacks from an older executeIntent run', async () => {
+    const deferred = () => {
+      let resolve!: (value: any) => void;
+      const promise = new Promise((res) => {
+        resolve = res;
+      });
+      return { promise, resolve };
+    };
+
+    const first = deferred();
+    const second = deferred();
+
+    (executeAgent as jest.Mock)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+
+    const handlersByRun = new Map<
+      string,
+      {
+        onEvent: (event: StepEvent) => void;
+        onError: (error: Error) => void;
+      }
+    >();
+
+    (openAgentStream as jest.Mock).mockImplementation((runId: string, callbacks: { onEvent: (event: StepEvent) => void; onError: (error: Error) => void }) => {
+      handlersByRun.set(runId, callbacks);
+      return () => undefined;
+    });
+
+    const { result } = renderHook(() => useAgentRun());
+
+    await act(async () => {
+      const runOnePromise = result.current.executeIntent('first');
+      const runTwoPromise = result.current.executeIntent('second');
+
+      second.resolve({ runId: 'run-2', steps: [] });
+      await Promise.resolve();
+      first.resolve({ runId: 'run-1', steps: [] });
+
+      await Promise.all([runOnePromise, runTwoPromise]);
+    });
+
+    const staleResult: AgentRunResult = {
+      runId: 'run-1',
+      steps: [],
+      rejection: {
+        reason: 'stale',
+        policyField: 'none',
+      },
+    };
+
+    await act(async () => {
+      handlersByRun.get('run-1')?.onEvent({ type: 'complete', result: staleResult });
+    });
+
+    expect(result.current.result).toBeNull();
+    expect(result.current.runState).toBe('running');
+  });
+
+  it('resetRun and unmount clean up active stream subscriptions', async () => {
+    const close = jest.fn();
+    (executeAgent as jest.Mock).mockResolvedValue({
+      runId: 'run-cleanup',
+      steps: [],
+    });
+    (openAgentStream as jest.Mock).mockImplementation(() => close);
+
+    const { result, unmount } = renderHook(() => useAgentRun());
+
+    await act(async () => {
+      await result.current.executeIntent('cleanup');
+    });
+
+    act(() => {
+      result.current.resetRun();
+    });
+
+    expect(close).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await result.current.executeIntent('cleanup-again');
+    });
+
+    unmount();
+    expect(close).toHaveBeenCalledTimes(2);
+  });
 });

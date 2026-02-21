@@ -25,7 +25,10 @@ export function useAgentRun() {
     const { selectedAccount, authorizeSession } = useAuthorization();
     const { connection } = useConnection();
     const closeStreamRef = useRef<(() => void) | null>(null);
+    const streamRunTokenRef = useRef<number | null>(null);
     const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const heartbeatRunTokenRef = useRef<number | null>(null);
+    const runTokenRef = useRef(0);
     const lastActivityAtRef = useRef<number>(0);
 
     const [runState, setRunState] = useState<AgentRunState>('idle');
@@ -46,19 +49,32 @@ export function useAgentRun() {
         setSteps((prev) => prev.filter((step) => !isStillWorkingStep(step)));
     }, [isStillWorkingStep]);
 
-    const stopActiveRun = useCallback(() => {
-        if (heartbeatTimerRef.current) {
+    const stopActiveRun = useCallback((targetRunToken?: number) => {
+        const token = targetRunToken ?? runTokenRef.current;
+
+        if (
+            heartbeatTimerRef.current &&
+            heartbeatRunTokenRef.current === token
+        ) {
             clearInterval(heartbeatTimerRef.current);
             heartbeatTimerRef.current = null;
+            heartbeatRunTokenRef.current = null;
         }
-        if (closeStreamRef.current) {
+
+        if (
+            closeStreamRef.current &&
+            streamRunTokenRef.current === token
+        ) {
             closeStreamRef.current();
             closeStreamRef.current = null;
+            streamRunTokenRef.current = null;
         }
     }, []);
 
     const resetRun = useCallback(() => {
-        stopActiveRun();
+        const activeRunToken = runTokenRef.current;
+        runTokenRef.current += 1;
+        stopActiveRun(activeRunToken);
         setRunState('idle');
         setSteps([]);
         setResult(null);
@@ -78,8 +94,13 @@ export function useAgentRun() {
                 return;
             }
 
+            const previousRunToken = runTokenRef.current;
+            const runToken = previousRunToken + 1;
+
             try {
-                stopActiveRun();
+                runTokenRef.current = runToken;
+                stopActiveRun(previousRunToken);
+
                 setRunState('running');
                 setSteps([]);
                 setResult(null);
@@ -88,6 +109,10 @@ export function useAgentRun() {
 
                 const pubkey = selectedAccount.publicKey.toBase58();
                 const executeResponse = await executeAgent(intent, pubkey);
+
+                if (runTokenRef.current !== runToken) {
+                    return;
+                }
 
                 setSteps(executeResponse.steps ?? []);
 
@@ -98,12 +123,20 @@ export function useAgentRun() {
                 lastActivityAtRef.current = Date.now();
 
                 const failForTimeout = () => {
-                    stopActiveRun();
+                    if (runTokenRef.current !== runToken) {
+                        return;
+                    }
+
+                    stopActiveRun(runToken);
                     setRunState('error');
                     setError('Agent run timed out. Please retry your intent.');
                 };
 
                 heartbeatTimerRef.current = setInterval(() => {
+                    if (runTokenRef.current !== runToken) {
+                        return;
+                    }
+
                     const elapsed = Date.now() - lastActivityAtRef.current;
 
                     if (elapsed > 20000) {
@@ -129,9 +162,14 @@ export function useAgentRun() {
                         });
                     }
                 }, 1000);
+                heartbeatRunTokenRef.current = runToken;
 
                 closeStreamRef.current = openAgentStream(executeResponse.runId, {
                     onEvent: (event) => {
+                        if (runTokenRef.current !== runToken) {
+                            return;
+                        }
+
                         lastActivityAtRef.current = Date.now();
 
                         if (event.type === 'heartbeat') {
@@ -144,7 +182,7 @@ export function useAgentRun() {
                         }
 
                         if (event.type === 'complete') {
-                            stopActiveRun();
+                            stopActiveRun(runToken);
                             removeStillWorkingStep();
                             const finalResult = event.result as AgentRunResult | undefined;
                             if (!finalResult) {
@@ -167,13 +205,22 @@ export function useAgentRun() {
                         }
                     },
                     onError: (streamError) => {
-                        stopActiveRun();
+                        if (runTokenRef.current !== runToken) {
+                            return;
+                        }
+
+                        stopActiveRun(runToken);
                         setRunState('error');
                         setError(streamError.message || 'Agent stream failed. Please retry.');
                     },
                 });
+                streamRunTokenRef.current = runToken;
             } catch (err: any) {
-                stopActiveRun();
+                if (runTokenRef.current !== runToken) {
+                    return;
+                }
+
+                stopActiveRun(runToken);
                 setError(err.message || 'Agent execution failed');
                 setRunState('error');
             }

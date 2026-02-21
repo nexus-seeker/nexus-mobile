@@ -86,35 +86,116 @@ export function openAgentStream(
   },
 ): () => void {
   const EventSourceCtor = (globalThis as any).EventSource;
-  if (!EventSourceCtor) {
-    throw new Error('SSE is not supported in this environment');
-  }
+  const XHRCtor = (globalThis as any).XMLHttpRequest;
+  let closed = false;
 
-  const source = new EventSourceCtor(getSSEUrl(runId), {
-    headers: {
-      'x-api-key': API_KEY,
-    },
-  });
+  const reportError = (error: Error) => {
+    if (closed) {
+      return;
+    }
+    callbacks.onError(error);
+  };
 
-  const handleMessage = (raw: { data?: string }) => {
-    if (!raw?.data) {
+  const handleMessage = (rawData?: string) => {
+    if (!rawData) {
       return;
     }
     try {
-      const event = JSON.parse(raw.data) as StepEvent;
+      const event = JSON.parse(rawData) as StepEvent;
       callbacks.onEvent(event);
     } catch {
-      callbacks.onError(new Error('Invalid SSE payload'));
+      reportError(new Error('Invalid SSE payload'));
     }
   };
 
-  source.onmessage = handleMessage;
-  source.onerror = () => {
-    callbacks.onError(new Error('Agent stream disconnected'));
+  if (EventSourceCtor) {
+    const source = new EventSourceCtor(getSSEUrl(runId), {
+      headers: {
+        'x-api-key': API_KEY,
+      },
+    });
+
+    source.onmessage = (raw: { data?: string }) => {
+      handleMessage(raw?.data);
+    };
+    source.onerror = () => {
+      reportError(new Error('Agent stream disconnected'));
+    };
+
+    return () => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      source.close();
+    };
+  }
+
+  if (!XHRCtor) {
+    throw new Error('SSE is not supported in this environment');
+  }
+
+  const xhr = new XHRCtor();
+  let cursor = 0;
+
+  const parseChunk = () => {
+    const chunk = xhr.responseText?.slice(cursor) ?? '';
+    if (!chunk) {
+      return;
+    }
+
+    const frames = chunk.split('\n\n');
+    cursor += chunk.length;
+
+    const tail = frames.pop() ?? '';
+    cursor -= tail.length;
+
+    for (const frame of frames) {
+      const data = frame
+        .split('\n')
+        .filter((line: string) => line.startsWith('data:'))
+        .map((line: string) => line.slice(5).trimStart())
+        .join('\n');
+
+      handleMessage(data);
+    }
   };
 
+  xhr.onreadystatechange = () => {
+    if (closed) {
+      return;
+    }
+
+    if (xhr.readyState === 3 || xhr.readyState === 4) {
+      parseChunk();
+    }
+
+    if (xhr.readyState === 4 && xhr.status >= 400) {
+      reportError(new Error(`Agent stream failed: ${xhr.status}`));
+    }
+  };
+
+  xhr.onprogress = () => {
+    if (closed) {
+      return;
+    }
+    parseChunk();
+  };
+
+  xhr.onerror = () => {
+    reportError(new Error('Agent stream disconnected'));
+  };
+
+  xhr.open('GET', getSSEUrl(runId), true);
+  xhr.setRequestHeader('x-api-key', API_KEY);
+  xhr.send();
+
   return () => {
-    source.close();
+    if (closed) {
+      return;
+    }
+    closed = true;
+    xhr.abort();
   };
 }
 
