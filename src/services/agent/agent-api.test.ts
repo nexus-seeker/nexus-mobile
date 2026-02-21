@@ -31,6 +31,10 @@ describe('agent-api contract', () => {
       `${API_BASE_URL}/agent/execute`,
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          'x-api-key': expect.any(String),
+          'Content-Type': 'application/json',
+        }),
         body: JSON.stringify({ intent: 'swap usdc to sol', pubkey: 'wallet-1' }),
       }),
     );
@@ -64,7 +68,11 @@ describe('agent-api contract', () => {
     await expect(fetchPolicy('wallet/with space')).resolves.toEqual(policy);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${API_BASE_URL}/policy?pubkey=wallet%2Fwith%20space`,
-      expect.any(Object),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-api-key': expect.any(String),
+        }),
+      }),
     );
   });
 
@@ -88,6 +96,10 @@ describe('agent-api contract', () => {
       `${API_BASE_URL}/policy/update`,
       expect.objectContaining({
         method: 'POST',
+        headers: expect.objectContaining({
+          'x-api-key': expect.any(String),
+          'Content-Type': 'application/json',
+        }),
         body: JSON.stringify({
           pubkey: 'wallet-1',
           dailyMaxLamports: 999,
@@ -116,7 +128,11 @@ describe('agent-api contract', () => {
     await expect(fetchReceipts('wallet/with space')).resolves.toEqual(receipts);
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${API_BASE_URL}/receipts?pubkey=wallet%2Fwith%20space`,
-      expect.any(Object),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-api-key': expect.any(String),
+        }),
+      }),
     );
   });
 
@@ -132,6 +148,24 @@ describe('agent-api contract', () => {
 });
 
 describe('openAgentStream', () => {
+  const createMockXHR = () => {
+    const xhr = {
+      readyState: 3,
+      status: 200,
+      responseText: '',
+      onreadystatechange: null as (() => void) | null,
+      onprogress: null as (() => void) | null,
+      onerror: null as (() => void) | null,
+      open: jest.fn(),
+      setRequestHeader: jest.fn(),
+      send: jest.fn(),
+      abort: jest.fn(),
+    };
+
+    (globalThis as any).XMLHttpRequest = jest.fn(() => xhr);
+    return xhr;
+  };
+
   afterEach(() => {
     delete (globalThis as any).EventSource;
     delete (globalThis as any).XMLHttpRequest;
@@ -187,21 +221,7 @@ describe('openAgentStream', () => {
   });
 
   it('uses XMLHttpRequest fallback when EventSource is unavailable', () => {
-    class MockXHR {
-      readyState = 3;
-      status = 200;
-      responseText = '';
-      onreadystatechange: (() => void) | null = null;
-      onprogress: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      open = jest.fn();
-      setRequestHeader = jest.fn();
-      send = jest.fn();
-      abort = jest.fn();
-    }
-
-    const xhr = new MockXHR();
-    (globalThis as any).XMLHttpRequest = jest.fn(() => xhr);
+    const xhr = createMockXHR();
 
     const onEvent = jest.fn();
     const onError = jest.fn();
@@ -223,21 +243,7 @@ describe('openAgentStream', () => {
   });
 
   it('parses CRLF-framed events in XMLHttpRequest fallback', () => {
-    class MockXHR {
-      readyState = 3;
-      status = 200;
-      responseText = '';
-      onreadystatechange: (() => void) | null = null;
-      onprogress: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      open = jest.fn();
-      setRequestHeader = jest.fn();
-      send = jest.fn();
-      abort = jest.fn();
-    }
-
-    const xhr = new MockXHR();
-    (globalThis as any).XMLHttpRequest = jest.fn(() => xhr);
+    const xhr = createMockXHR();
 
     const onEvent = jest.fn();
 
