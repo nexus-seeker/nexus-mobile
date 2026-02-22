@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import {
   Button,
   Card,
@@ -17,6 +17,7 @@ const EXAMPLE_INTENT = 'Swap 0.1 SOL to USDC';
 export function ChatScreen() {
   const { selectedAccount } = useAuthorization();
   const [intent, setIntent] = useState('');
+  const [isApprovalSheetVisible, setIsApprovalSheetVisible] = useState(false);
   const {
     runState,
     steps,
@@ -37,7 +38,13 @@ export function ChatScreen() {
     const trimmed = intent.trim();
     if (!trimmed || runState === 'running') return;
     setIntent('');
+    setIsApprovalSheetVisible(false);
     await executeIntent(trimmed);
+  }
+
+  function handleReset() {
+    setIsApprovalSheetVisible(false);
+    resetRun();
   }
 
   const isRunning = runState === 'running';
@@ -111,7 +118,7 @@ export function ChatScreen() {
           <Button
             mode="contained"
             icon="fingerprint"
-            onPress={() => { }}
+            onPress={() => setIsApprovalSheetVisible(true)}
             style={styles.approveButton}
             contentStyle={styles.approveButtonContent}
           >
@@ -123,7 +130,7 @@ export function ChatScreen() {
         {(runState === 'confirmed' || runState === 'rejected' || runState === 'error') && (
           <Button
             mode="text"
-            onPress={resetRun}
+            onPress={handleReset}
             style={{ marginTop: 8 }}
           >
             New intent
@@ -169,11 +176,14 @@ export function ChatScreen() {
 
       {/* Approval Sheet */}
       <ApprovalSheet
-        visible={showApproval}
+        visible={showApproval && isApprovalSheetVisible}
         result={result}
         isLoading={isSigning}
-        onApprove={approveTransaction}
-        onCancel={resetRun}
+        onApprove={() => {
+          setIsApprovalSheetVisible(false);
+          void approveTransaction();
+        }}
+        onCancel={handleReset}
       />
     </View>
   );

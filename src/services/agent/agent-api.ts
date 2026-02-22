@@ -29,6 +29,11 @@ export interface AgentRunResult {
   };
 }
 
+export interface AgentExecuteResponse {
+  runId: string;
+  steps?: StepEvent[];
+}
+
 export interface PolicyDto {
   exists: boolean;
   owner: string;
@@ -51,6 +56,23 @@ export interface ReceiptDto {
   timestamp: number;
 }
 
+function normalizeStreamEvent(rawEvent: unknown): StepEvent {
+  const event = rawEvent as StepEvent & { step?: Partial<StepEvent> };
+
+  if (event?.type !== 'step' || !event.step) {
+    return event;
+  }
+
+  const normalized = {
+    ...event,
+    ...event.step,
+    type: 'step' as const,
+  };
+
+  delete (normalized as { step?: Partial<StepEvent> }).step;
+  return normalized;
+}
+
 const headers = {
   'Content-Type': 'application/json',
   'x-api-key': API_KEY,
@@ -59,7 +81,7 @@ const headers = {
 export async function executeAgent(
   intent: string,
   pubkey: string,
-): Promise<AgentRunResult> {
+): Promise<AgentExecuteResponse> {
   const response = await fetch(`${API_BASE_URL}/agent/execute`, {
     method: 'POST',
     headers,
@@ -71,6 +93,127 @@ export async function executeAgent(
   }
 
   return response.json();
+}
+
+export function openAgentStream(
+  runId: string,
+  callbacks: {
+    onEvent: (event: StepEvent) => void;
+    onError: (error: Error) => void;
+  },
+): () => void {
+  const EventSourceCtor = (globalThis as any).EventSource;
+  const XHRCtor = (globalThis as any).XMLHttpRequest;
+  let closed = false;
+
+  const reportError = (error: Error) => {
+    if (closed) {
+      return;
+    }
+    callbacks.onError(error);
+  };
+
+  const handleMessage = (rawData?: string) => {
+    if (!rawData) {
+      return;
+    }
+    try {
+      const event = normalizeStreamEvent(JSON.parse(rawData));
+      callbacks.onEvent(event);
+    } catch {
+      reportError(new Error('Invalid SSE payload'));
+    }
+  };
+
+  if (EventSourceCtor) {
+    const source = new EventSourceCtor(getSSEUrl(runId), {
+      headers: {
+        'x-api-key': API_KEY,
+      },
+    });
+
+    source.onmessage = (raw: { data?: string }) => {
+      handleMessage(raw?.data);
+    };
+    source.onerror = () => {
+      reportError(new Error('Agent stream disconnected'));
+    };
+
+    return () => {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      source.close();
+    };
+  }
+
+  if (!XHRCtor) {
+    throw new Error('SSE is not supported in this environment');
+  }
+
+  const xhr = new XHRCtor();
+  let cursor = 0;
+
+  const parseChunk = () => {
+    const chunk = xhr.responseText?.slice(cursor) ?? '';
+    if (!chunk) {
+      return;
+    }
+
+    const frames = chunk.split(/\r?\n\r?\n/);
+    cursor += chunk.length;
+
+    const tail = frames.pop() ?? '';
+    cursor -= tail.length;
+
+    for (const frame of frames) {
+      const data = frame
+        .split(/\r?\n/)
+        .filter((line: string) => line.startsWith('data:'))
+        .map((line: string) => line.slice(5).trimStart())
+        .join('\n');
+
+      handleMessage(data);
+    }
+  };
+
+  xhr.onreadystatechange = () => {
+    if (closed) {
+      return;
+    }
+
+    if (xhr.readyState === 3 || xhr.readyState === 4) {
+      parseChunk();
+    }
+
+    if (xhr.readyState === 4 && xhr.status >= 400) {
+      reportError(new Error(`Agent stream failed: ${xhr.status}`));
+    }
+  };
+
+  xhr.onprogress = () => {
+    if (closed) {
+      return;
+    }
+    parseChunk();
+  };
+
+  xhr.onerror = () => {
+    reportError(new Error('Agent stream disconnected'));
+  };
+
+  xhr.open('GET', getSSEUrl(runId), true);
+  xhr.setRequestHeader('x-api-key', API_KEY);
+  xhr.send();
+
+  return () => {
+    if (closed) {
+      return;
+    }
+    closed = true;
+    xhr.abort();
+  };
 }
 
 export async function fetchPolicy(pubkey: string): Promise<PolicyDto> {
