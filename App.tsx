@@ -11,12 +11,6 @@ import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
 } from "@react-navigation/native";
-import {
-  PaperProvider,
-  MD3DarkTheme,
-  MD3LightTheme,
-  adaptNavigationTheme,
-} from "react-native-paper";
 import { AppNavigator } from "./src/navigators/AppNavigator";
 import { ClusterProvider } from "./src/components/cluster/cluster-data-access";
 import { PolicyProvider } from "./src/contexts/PolicyContext";
@@ -32,27 +26,8 @@ export default function App() {
       <View style={{ flex: 1, backgroundColor: "#000" }} />
     );
   }
-  const { LightTheme, DarkTheme } = adaptNavigationTheme({
-    reactNavigationLight: NavigationDefaultTheme,
-    reactNavigationDark: NavigationDarkTheme,
-  });
+  const theme = colorScheme === "dark" ? NavigationDarkTheme : NavigationDefaultTheme;
 
-  const CombinedDefaultTheme = {
-    ...MD3LightTheme,
-    ...LightTheme,
-    colors: {
-      ...MD3LightTheme.colors,
-      ...LightTheme.colors,
-    },
-  };
-  const CombinedDarkTheme = {
-    ...MD3DarkTheme,
-    ...DarkTheme,
-    colors: {
-      ...MD3DarkTheme.colors,
-      ...DarkTheme.colors,
-    },
-  };
   return (
     <QueryClientProvider client={queryClient}>
       <ClusterProvider>
@@ -61,24 +36,13 @@ export default function App() {
             style={[
               styles.shell,
               {
-                backgroundColor:
-                  colorScheme === "dark"
-                    ? MD3DarkTheme.colors.background
-                    : MD3LightTheme.colors.background,
+                backgroundColor: theme.colors.background,
               },
             ]}
           >
-            <PaperProvider
-              theme={
-                colorScheme === "dark"
-                  ? CombinedDarkTheme
-                  : CombinedDefaultTheme
-              }
-            >
-              <PolicyProvider>
-                <AppNavigator />
-              </PolicyProvider>
-            </PaperProvider>
+            <PolicyProvider>
+              <AppNavigator />
+            </PolicyProvider>
           </SafeAreaView>
         </ConnectionProvider>
       </ClusterProvider>
