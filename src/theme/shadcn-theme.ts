@@ -195,3 +195,33 @@ export const badgeBase = {
   paddingVertical: spacing.xs,
   paddingHorizontal: spacing.sm,
 };
+
+export const navigationTheme = {
+  dark: true,
+  colors: {
+    primary: colors.foreground,
+    background: colors.background,
+    card: colors.backgroundSecondary,
+    text: colors.foreground,
+    border: colors.border,
+    notification: colors.primary,
+  },
+};
+
+export const tabBarOptions = {
+  tabBarStyle: {
+    backgroundColor: colors.backgroundSecondary,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    elevation: 0,
+    height: 64,
+    paddingBottom: 8,
+  },
+  tabBarActiveTintColor: colors.foreground,
+  tabBarInactiveTintColor: colors.foregroundSubtle,
+  tabBarLabelStyle: {
+    fontFamily: typography.fontSans,
+    fontSize: typography.sizeXs,
+    fontWeight: typography.weightMedium,
+  },
+};

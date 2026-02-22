@@ -7,21 +7,17 @@ import {
   PolicyScreen,
   ProfileScreen,
 } from "../screens";
+import { tabBarOptions } from "../theme/shadcn-theme";
 
 const Tab = createBottomTabNavigator();
 
-/**
- * This is the main navigator with a bottom tab bar.
- * Each tab is a stack navigator with its own set of screens.
- *
- * More info: https://reactnavigation.org/docs/bottom-tab-navigator/
- */
 export function HomeNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerTitleAlign: "left",
+        headerShown: false,
         tabBarHideOnKeyboard: true,
+        ...tabBarOptions,
         tabBarIcon: ({ focused, color, size }) => {
           switch (route.name) {
             case "Chat":
@@ -43,7 +39,7 @@ export function HomeNavigator() {
             case "History":
               return (
                 <MaterialCommunityIcon
-                  name={focused ? "history" : "history"}
+                  name="history"
                   size={size}
                   color={color}
                 />
