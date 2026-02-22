@@ -28,6 +28,7 @@ import { useMobileWallet } from "../utils/useMobileWallet";
 type SavePolicyInput = {
   dailyLimitSol: number;
   allowedProtocols: PolicyProtocol[];
+  isActive: boolean;
 };
 
 type SavePolicyResult = {
@@ -131,6 +132,7 @@ export function PolicyProvider({ children }: { children: ReactNode }) {
           dailyLimitSol: Math.max(input.dailyLimitSol, 0),
           dailySpentSol: Math.max(Math.min(policy.dailySpentSol, input.dailyLimitSol), 0),
           allowedProtocols: [...new Set(input.allowedProtocols)],
+          isActive: input.isActive ?? true,
         };
 
         setPolicy(normalizedPolicy);

@@ -6,11 +6,12 @@ import {
 const LAMPORTS_PER_SOL = 1_000_000_000;
 
 const CODEC_VERSION = 1;
-const PAYLOAD_BYTES = 18;
+const PAYLOAD_BYTES = 19;
 const OFFSET_VERSION = 0;
 const OFFSET_DAILY_LIMIT = 1;
 const OFFSET_DAILY_SPENT = 9;
 const OFFSET_PROTOCOL_FLAGS = 17;
+const OFFSET_IS_ACTIVE = 18;
 
 const PROTOCOL_FLAG_JUPITER = 1 << 0;
 const PROTOCOL_FLAG_SPL_TRANSFER = 1 << 1;
@@ -24,6 +25,7 @@ export function buildPolicyVaultPayload(policy: PolicyState): Uint8Array {
   view.setBigUint64(OFFSET_DAILY_SPENT, solToLamports(policy.dailySpentSol), true);
 
   payload[OFFSET_PROTOCOL_FLAGS] = protocolsToFlags(policy.allowedProtocols);
+  payload[OFFSET_IS_ACTIVE] = policy.isActive ? 1 : 0;
 
   return payload;
 }
@@ -43,11 +45,13 @@ export function parsePolicyVaultPayload(payload: Uint8Array): PolicyState {
   const dailyLimitSol = lamportsToSol(view.getBigUint64(OFFSET_DAILY_LIMIT, true));
   const dailySpentSol = lamportsToSol(view.getBigUint64(OFFSET_DAILY_SPENT, true));
   const allowedProtocols = flagsToProtocols(view.getUint8(OFFSET_PROTOCOL_FLAGS));
+  const isActive = view.getUint8(OFFSET_IS_ACTIVE) !== 0;
 
   return {
     dailyLimitSol,
     dailySpentSol,
     allowedProtocols,
+    isActive,
   };
 }
 

@@ -97,8 +97,8 @@ async function persistAuthorization(
 }
 
 export const APP_IDENTITY = {
-  name: "Solana Mobile Expo Template",
-  uri: "https://fakedomain.com",
+  name: "NEXUS",
+  uri: "https://nexus.app",
 };
 
 export function useAuthorization() {
@@ -171,6 +171,6 @@ export function useAuthorization() {
       selectedAccount: authorization?.selectedAccount ?? null,
       isLoading,
     }),
-    [authorization, authorizeSession, deauthorizeSession]
+    [authorization, authorizeSession, authorizeSessionWithSignIn, deauthorizeSession, isLoading]
   );
 }

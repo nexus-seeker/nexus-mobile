@@ -70,7 +70,7 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
           selectedCluster
         )}`,
     }),
-    [selectedCluster, setSelectedCluster]
+    [clusters, selectedCluster]
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
