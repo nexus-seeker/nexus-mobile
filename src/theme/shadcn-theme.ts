@@ -40,10 +40,16 @@ export const colors = {
   warning: '#f59e0b',
   warningMuted: 'rgba(245, 158, 11, 0.15)',
 
+  // Additional tokens
+  accent: '#f59e0b',
+  accentMuted: 'rgba(245, 158, 11, 0.15)',
+  glassBorder: 'rgba(255, 255, 255, 0.1)',
+
   // Gradients - use sparingly
   gradientPrimary: ['#8b5cf6', '#06b6d4'] as const,
   gradientSuccess: ['#22c55e', '#06b6d4'] as const,
   gradientError: ['#ef4444', '#f59e0b'] as const,
+  gradientSurface: ['rgba(139, 92, 246, 0.1)', 'rgba(6, 182, 212, 0.05)'] as const,
 };
 
 // Font weights as const for type safety
@@ -121,6 +127,13 @@ export const shadows = {
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
+  },
+  glowSuccess: {
+    shadowColor: colors.success,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
 };
 

@@ -11,16 +11,18 @@ import { colors, radii, spacing, typography } from '../../theme/shadcn-theme';
 interface InputProps extends TextInputProps {
   icon?: React.ReactNode;
   containerStyle?: ViewProps['style'];
+  leftIcon?: React.ReactNode;
 }
 
 export const Input = forwardRef<TextInput, InputProps>(
-  ({ icon, containerStyle, style, ...props }, ref) => {
+  ({ icon, leftIcon, containerStyle, style, ...props }, ref) => {
+    const iconToUse = leftIcon || icon;
     return (
       <View style={[styles.container, containerStyle]}>
-        {icon && <View style={styles.iconContainer}>{icon}</View>}
+        {iconToUse && <View style={styles.iconContainer}>{iconToUse}</View>}
         <TextInput
           ref={ref}
-          style={[styles.input, icon && styles.inputWithIcon, style]}
+          style={[styles.input, iconToUse ? styles.inputWithIcon : undefined, style]}
           placeholderTextColor={colors.foregroundSubtle}
           {...props}
         />

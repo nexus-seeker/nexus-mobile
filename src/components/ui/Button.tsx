@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   View,
   type PressableProps,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { colors, radii, spacing, typography } from '../../theme/shadcn-theme';
 
@@ -15,6 +17,7 @@ interface ButtonProps extends PressableProps {
   children: React.ReactNode;
   loading?: boolean;
   icon?: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function Button({

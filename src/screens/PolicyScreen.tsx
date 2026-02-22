@@ -188,7 +188,7 @@ export function PolicyScreen() {
       </View>
 
       {/* Main Policy Card */}
-      <Card variant="accent" style={styles.policyCard}>
+      <Card variant="outline" style={styles.policyCard}>
         {/* Daily Limit Input */}
         <View style={styles.inputGroup}>
           <Text variant="muted" style={styles.inputLabel}>Daily Spend Limit (SOL)</Text>
@@ -197,7 +197,7 @@ export function PolicyScreen() {
             onChangeText={setDailyLimitSol}
             keyboardType="decimal-pad"
             placeholder="0.00"
-            leftIcon={<MaterialCommunityIcons name="currency-usd" size={20} color={colors.foregroundMuted} />}
+            icon={<MaterialCommunityIcons name="currency-usd" size={20} color={colors.foregroundMuted} />}
           />
           {isLimitInvalid && (
             <Text style={styles.errorHelper}>Enter a valid non-negative SOL limit</Text>
