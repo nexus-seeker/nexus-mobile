@@ -6,105 +6,17 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { Text, TextInput, ActivityIndicator } from 'react-native-paper';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthorization } from '../utils/useAuthorization';
 import { useAgentRun } from '../hooks/useAgentRun';
 import { StepCard } from '../components/StepCard';
 import { ApprovalSheet } from '../components/ApprovalSheet';
+import { Button, Card, Input, Text } from '../components/ui';
 import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
 
 const EXAMPLE_INTENT = 'Swap 0.1 SOL to USDC';
-
-// Shadcn-style Glass Card Component
-function GlassCard({ children, style, gradient = false }: { children: React.ReactNode; style?: any; gradient?: boolean }) {
-  if (gradient) {
-    return (
-      <LinearGradient
-        colors={colors.gradientSurface}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.glassCard, style]}
-      >
-        {children}
-      </LinearGradient>
-    );
-  }
-  return (
-    <BlurView intensity={20} tint="dark" style={[styles.glassCard, style]}>
-      {children}
-    </BlurView>
-  );
-}
-
-// Gradient Button
-function GradientButton({
-  onPress,
-  children,
-  icon,
-  disabled = false,
-  loading = false,
-  variant = 'primary',
-}: {
-  onPress: () => void;
-  children: React.ReactNode;
-  icon?: string;
-  disabled?: boolean;
-  loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'success' | 'danger';
-}) {
-  const gradientColors = {
-    primary: colors.gradientPrimary,
-    secondary: ['transparent', 'transparent'] as const,
-    success: colors.gradientSuccess,
-    danger: colors.gradientError,
-  };
-
-  const isSecondary = variant === 'secondary';
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.button,
-        isSecondary && styles.buttonSecondary,
-        pressed && styles.buttonPressed,
-        disabled && styles.buttonDisabled,
-      ]}
-    >
-      <LinearGradient
-        colors={gradientColors[variant]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[
-          StyleSheet.absoluteFill,
-          { borderRadius: radii.lg, opacity: isSecondary ? 0 : 1 },
-        ]}
-      />
-      {loading ? (
-        <ActivityIndicator size="small" color={isSecondary ? colors.foreground : colors.foreground} />
-      ) : (
-        <View style={styles.buttonContent}>
-          {icon && (
-            <MaterialCommunityIcons
-              name={icon as any}
-              size={18}
-              color={isSecondary ? colors.foreground : colors.foreground}
-              style={{ marginRight: spacing.sm }}
-            />
-          )}
-          <Text style={[styles.buttonText, isSecondary && styles.buttonTextSecondary]}>
-            {children}
-          </Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
 
 // Status Indicator
 function StatusIndicator({ status }: { status: string }) {
@@ -176,30 +88,23 @@ export function ChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.screen}
     >
-      {/* Header with Glassmorphism */}
+      {/* Header - solid background */}
       <View style={styles.header}>
-        <LinearGradient
-          colors={colors.gradientPrimary}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.headerGradient}
-        >
-          <View style={styles.headerContent}>
-            <View style={styles.headerTitleContainer}>
-              <MaterialCommunityIcons
-                name="hexagon-multiple"
-                size={28}
-                color={colors.foreground}
-                style={{ marginRight: spacing.sm }}
-              />
-              <Text style={styles.headerTitle}>NEXUS</Text>
-            </View>
-            <View style={styles.walletChip}>
-              <View style={[styles.statusDot, { backgroundColor: selectedAccount ? colors.success : colors.error }]} />
-              <Text style={styles.walletChipText}>{shortPubkey}</Text>
-            </View>
+        <View style={styles.headerContent}>
+          <View style={styles.headerTitleContainer}>
+            <MaterialCommunityIcons
+              name="hexagon-multiple"
+              size={24}
+              color={colors.foreground}
+              style={{ marginRight: spacing.sm }}
+            />
+            <Text variant="h4">NEXUS</Text>
           </View>
-        </LinearGradient>
+          <View style={styles.walletChip}>
+            <View style={[styles.statusDot, { backgroundColor: selectedAccount ? colors.success : colors.error }]} />
+            <Text style={styles.walletChipText}>{shortPubkey}</Text>
+          </View>
+        </View>
       </View>
 
       <ScrollView
@@ -216,9 +121,9 @@ export function ChatScreen() {
 
         {/* Agent Steps */}
         {steps.length > 0 && (
-          <GlassCard gradient style={styles.agentCard}>
+          <Card style={styles.agentCard}>
             <View style={styles.agentCardHeader}>
-              <MaterialCommunityIcons name="robot" size={20} color={colors.primaryLight} />
+              <MaterialCommunityIcons name="robot" size={18} color={colors.primaryLight} />
               <Text style={styles.agentLabel}>NEXUS AGENT</Text>
             </View>
             <View style={styles.stepsContainer}>
@@ -226,74 +131,62 @@ export function ChatScreen() {
                 <StepCard key={`${step.node}-${i}`} step={step} index={i} />
               ))}
             </View>
-          </GlassCard>
+          </Card>
         )}
 
         {/* Confirmed Transaction */}
         {confirmedSig && (
-          <LinearGradient
-            colors={colors.gradientSuccess}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.successCard}
-          >
+          <View style={styles.successCard}>
             <MaterialCommunityIcons name="check-circle" size={32} color={colors.foreground} />
-            <Text style={styles.successTitle}>Transaction Confirmed</Text>
+            <Text variant="h4" style={{ marginTop: spacing.sm }}>Transaction Confirmed</Text>
             <Text style={styles.sigText}>
               {confirmedSig.slice(0, 16)}...{confirmedSig.slice(-8)}
             </Text>
-          </LinearGradient>
+          </View>
         )}
 
         {/* Error Message */}
         {error && runState !== 'awaiting_approval' && (
           <View style={styles.errorCard}>
             <MaterialCommunityIcons name="alert-circle" size={24} color={colors.error} />
-            <Text style={styles.errorTitle}>
+            <Text variant="h4" style={{ color: colors.error, marginTop: spacing.sm }}>
               {runState === 'rejected' ? 'Policy Rejected' : 'Error'}
             </Text>
-            <Text style={styles.errorText}>{error}</Text>
+            <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>{error}</Text>
           </View>
         )}
 
         {/* Approve Button */}
         {showApproval && (
           <View style={styles.approvalSection}>
-            <GlassCard style={styles.approvalCard}>
-              <MaterialCommunityIcons name="shield-key" size={40} color={colors.accent} />
-              <Text style={styles.approvalTitle}>Action Requires Approval</Text>
-              <Text style={styles.approvalSubtitle}>
-                Review the transaction details before signing with your wallet
+            <Card variant="outline" style={styles.approvalCard}>
+              <MaterialCommunityIcons name="shield-key" size={36} color={colors.primary} />
+              <Text variant="h4" style={{ marginTop: spacing.md }}>Action Required</Text>
+              <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>
+                Review transaction details before signing
               </Text>
-            </GlassCard>
-            <GradientButton
-              onPress={() => setIsApprovalSheetVisible(true)}
-              icon="fingerprint"
-              variant="success"
-            >
+            </Card>
+            <Button onPress={() => setIsApprovalSheetVisible(true)} size="lg">
               Approve with Seed Vault
-            </GradientButton>
+            </Button>
           </View>
         )}
 
         {/* Reset Button */}
         {(runState === 'confirmed' || runState === 'rejected' || runState === 'error') && (
-          <GradientButton onPress={handleReset} variant="secondary">
+          <Button variant="outline" onPress={handleReset}>
             New Intent
-          </GradientButton>
+          </Button>
         )}
 
         {/* Empty State */}
         {steps.length === 0 && runState === 'idle' && (
           <View style={styles.emptyState}>
-            <LinearGradient
-              colors={colors.gradientSurface}
-              style={styles.emptyStateIconContainer}
-            >
+            <View style={styles.emptyStateIconContainer}>
               <MaterialCommunityIcons name="brain" size={48} color={colors.primaryLight} />
-            </LinearGradient>
-            <Text style={styles.emptyTitle}>Ready for your intent</Text>
-            <Text style={styles.emptySubtitle}>
+            </View>
+            <Text variant="h4">Ready for your intent</Text>
+            <Text variant="muted" style={{ marginTop: spacing.xs }}>
               Tell NEXUS what you want to do
             </Text>
             <Pressable onPress={() => setIntent(EXAMPLE_INTENT)} style={styles.exampleChip}>
@@ -305,50 +198,31 @@ export function ChatScreen() {
 
       {/* Input Area */}
       <View style={styles.inputContainer}>
-        <BlurView intensity={30} tint="dark" style={styles.inputBlur}>
-          <View style={styles.inputRow}>
-            <TextInput
-              mode="flat"
-              placeholder="Type your intent..."
-              placeholderTextColor={colors.foregroundSubtle}
-              value={intent}
-              onChangeText={setIntent}
-              style={styles.input}
-              underlineColor="transparent"
-              activeUnderlineColor="transparent"
-              disabled={isRunning || isSigning}
-              onSubmitEditing={handleSend}
-              theme={{
-                colors: {
-                  primary: colors.primary,
-                  background: colors.backgroundTertiary,
-                  surface: colors.backgroundTertiary,
-                  placeholder: colors.foregroundSubtle,
-                  text: colors.foreground,
-                },
-              }}
-            />
-            <Pressable
-              onPress={handleSend}
-              disabled={isRunning || isSigning || !intent.trim()}
-              style={({ pressed }) => [
-                styles.sendButton,
-                pressed && styles.sendButtonPressed,
-                (isRunning || isSigning || !intent.trim()) && styles.sendButtonDisabled,
-              ]}
-            >
-              <LinearGradient
-                colors={isRunning || !intent.trim() ? ['#333', '#333'] : colors.gradientPrimary}
-                style={StyleSheet.absoluteFill}
-              />
-              {isRunning ? (
-                <ActivityIndicator size="small" color={colors.foreground} />
-              ) : (
-                <MaterialCommunityIcons name="send" size={20} color={colors.foreground} />
-              )}
-            </Pressable>
-          </View>
-        </BlurView>
+        <View style={styles.inputRow}>
+          <Input
+            placeholder="Type your intent..."
+            value={intent}
+            onChangeText={setIntent}
+            style={styles.input}
+            editable={!isRunning && !isSigning}
+            onSubmitEditing={handleSend}
+          />
+          <Pressable
+            onPress={handleSend}
+            disabled={isRunning || isSigning || !intent.trim()}
+            style={({ pressed }) => [
+              styles.sendButton,
+              pressed && styles.sendButtonPressed,
+              (isRunning || isSigning || !intent.trim()) && styles.sendButtonDisabled,
+            ]}
+          >
+            {isRunning ? (
+              <ActivityIndicator size="small" color={colors.foreground} />
+            ) : (
+              <MaterialCommunityIcons name="send" size={18} color={colors.foreground} />
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* Approval Sheet */}
@@ -373,10 +247,11 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: Platform.OS === 'ios' ? 60 : 20,
-  },
-  headerGradient: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerContent: {
     flexDirection: 'row',
@@ -386,12 +261,6 @@ const styles = StyleSheet.create({
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: typography.size2xl,
-    fontWeight: typography.weightBold,
-    color: colors.foreground,
-    letterSpacing: 2,
   },
   walletChip: {
     flexDirection: 'row',
@@ -442,15 +311,8 @@ const styles = StyleSheet.create({
     fontWeight: typography.weightSemibold,
     letterSpacing: 1,
   },
-  glassCard: {
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    overflow: 'hidden',
-  },
   agentCard: {
     padding: spacing.lg,
-    backgroundColor: colors.glass,
   },
   agentCardHeader: {
     flexDirection: 'row',
@@ -471,13 +333,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     padding: spacing.xl,
     alignItems: 'center',
+    backgroundColor: colors.success,
     ...shadows.glowSuccess,
-  },
-  successTitle: {
-    color: colors.foreground,
-    fontSize: typography.sizeLg,
-    fontWeight: typography.weightSemibold,
-    marginTop: spacing.sm,
   },
   sigText: {
     color: colors.foreground,
@@ -494,94 +351,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.error,
   },
-  errorTitle: {
-    color: colors.error,
-    fontSize: typography.sizeLg,
-    fontWeight: typography.weightSemibold,
-    marginTop: spacing.sm,
-  },
-  errorText: {
-    color: colors.foregroundMuted,
-    fontSize: typography.sizeSm,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
   approvalSection: {
     gap: spacing.md,
   },
   approvalCard: {
     padding: spacing.xl,
     alignItems: 'center',
-    backgroundColor: colors.backgroundElevated,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  approvalTitle: {
-    color: colors.foreground,
-    fontSize: typography.sizeLg,
-    fontWeight: typography.weightSemibold,
-    marginTop: spacing.md,
-  },
-  approvalSubtitle: {
-    color: colors.foregroundMuted,
-    fontSize: typography.sizeSm,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  badge: {
-    borderRadius: radii.full,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  badgeDefault: {
-    backgroundColor: colors.backgroundTertiary,
-  },
-  badgeSuccess: {
-    backgroundColor: colors.successMuted,
-  },
-  badgeError: {
-    backgroundColor: colors.errorMuted,
-  },
-  badgeWarning: {
-    backgroundColor: colors.warningMuted,
-  },
-  badgeText: {
-    color: colors.foreground,
-    fontSize: typography.sizeXs,
-    fontWeight: typography.weightMedium,
-  },
-  button: {
-    borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent',
-    ...shadows.md,
-  },
-  buttonSecondary: {
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.backgroundTertiary,
-  },
-  buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: colors.foreground,
-    fontSize: typography.sizeBase,
-    fontWeight: typography.weightSemibold,
-  },
-  buttonTextSecondary: {
-    color: colors.foreground,
   },
   emptyState: {
     alignItems: 'center',
@@ -594,18 +369,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
+    backgroundColor: colors.backgroundSecondary,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  emptyTitle: {
-    color: colors.foreground,
-    fontSize: typography.sizeXl,
-    fontWeight: typography.weightSemibold,
-  },
-  emptySubtitle: {
-    color: colors.foregroundMuted,
-    fontSize: typography.sizeBase,
-    marginTop: spacing.xs,
+    borderColor: colors.border,
   },
   exampleChip: {
     marginTop: spacing.lg,
@@ -624,23 +390,12 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: Platform.OS === 'ios' ? 30 : spacing.lg,
   },
-  inputBlur: {
-    borderRadius: radii.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.sm,
   },
   input: {
     flex: 1,
-    backgroundColor: colors.backgroundTertiary,
-    borderRadius: radii.lg,
-    height: 48,
-    fontSize: typography.sizeBase,
   },
   sendButton: {
     width: 48,
@@ -649,6 +404,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.foreground,
     overflow: 'hidden',
   },
   sendButtonPressed: {

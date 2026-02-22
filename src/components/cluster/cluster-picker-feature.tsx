@@ -1,6 +1,8 @@
 import { ClusterNetwork, useCluster } from "./cluster-data-access";
-import { RadioButton, Text } from "react-native-paper";
 import { ClusterPickerRadioButtonGroupRow } from "./cluster-ui";
+import { Text } from "../ui";
+import { View, StyleSheet } from "react-native";
+import { spacing } from "../../theme/shadcn-theme";
 
 function clusternetworkToIndex(clusterName: string): number {
   switch (clusterName) {
@@ -18,17 +20,24 @@ export default function ClusterPickerFeature() {
   const [devNetCluster, testNetCluster] = clusters;
 
   return (
-    <>
-      <Text variant="headlineMedium">Cluster:</Text>
-      <RadioButton.Group
-        onValueChange={(newClusternetwork) =>
-          setSelectedCluster(clusters[clusternetworkToIndex(newClusternetwork)])
-        }
-        value={selectedCluster.network}
-      >
-        <ClusterPickerRadioButtonGroupRow cluster={devNetCluster} />
-        <ClusterPickerRadioButtonGroupRow cluster={testNetCluster} />
-      </RadioButton.Group>
-    </>
+    <View style={styles.container}>
+      <Text variant="h3">Cluster:</Text>
+      <ClusterPickerRadioButtonGroupRow
+        cluster={devNetCluster}
+        selected={selectedCluster.name === devNetCluster.name}
+        onSelect={() => setSelectedCluster(devNetCluster)}
+      />
+      <ClusterPickerRadioButtonGroupRow
+        cluster={testNetCluster}
+        selected={selectedCluster.name === testNetCluster.name}
+        onSelect={() => setSelectedCluster(testNetCluster)}
+      />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginTop: spacing.md,
+  },
+});

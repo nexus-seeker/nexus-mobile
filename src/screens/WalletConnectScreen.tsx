@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Animated } from 'react-native';
-import { Button, Text, Card } from 'react-native-paper';
+import { Button, Text, Card } from '../components/ui';
 import { useMobileWallet } from '../utils/useMobileWallet';
 import { useAuthorization } from '../utils/useAuthorization';
 
@@ -37,10 +37,10 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
             <View style={styles.content}>
                 {/* Logo / Title */}
                 <View style={styles.header}>
-                    <Text variant="displaySmall" style={styles.title}>
+                    <Text variant="h2" style={styles.title}>
                         NEXUS
                     </Text>
-                    <Text variant="titleMedium" style={styles.subtitle}>
+                    <Text variant="lead" style={styles.subtitle}>
                         AI Agent OS for Solana Mobile
                     </Text>
                 </View>
@@ -51,8 +51,8 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                         <View style={styles.featureRow}>
                             <Text style={styles.featureIcon}>🤖</Text>
                             <View style={styles.featureText}>
-                                <Text variant="titleSmall">Natural Language DeFi</Text>
-                                <Text variant="bodySmall" style={styles.featureDesc}>
+                                <Text variant="h4">Natural Language DeFi</Text>
+                                <Text variant="muted" style={styles.featureDesc}>
                                     Just say what you want — NEXUS handles the rest
                                 </Text>
                             </View>
@@ -60,8 +60,8 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                         <View style={styles.featureRow}>
                             <Text style={styles.featureIcon}>🔐</Text>
                             <View style={styles.featureText}>
-                                <Text variant="titleSmall">On-chain Policy Guard</Text>
-                                <Text variant="bodySmall" style={styles.featureDesc}>
+                                <Text variant="h4">On-chain Policy Guard</Text>
+                                <Text variant="muted" style={styles.featureDesc}>
                                     Set daily limits + protocol allowlists that enforce atomically
                                 </Text>
                             </View>
@@ -69,8 +69,8 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                         <View style={styles.featureRow}>
                             <Text style={styles.featureIcon}>📱</Text>
                             <View style={styles.featureText}>
-                                <Text variant="titleSmall">Seed Vault Security</Text>
-                                <Text variant="bodySmall" style={styles.featureDesc}>
+                                <Text variant="h4">Seed Vault Security</Text>
+                                <Text variant="muted" style={styles.featureDesc}>
                                     Every transaction confirmed with your fingerprint
                                 </Text>
                             </View>
@@ -80,24 +80,21 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
 
                 {/* Connect button */}
                 <Button
-                    mode="contained"
                     onPress={handleConnect}
                     loading={isConnecting}
                     disabled={isConnecting}
-                    icon="wallet"
                     style={styles.connectButton}
-                    contentStyle={styles.connectButtonContent}
-                    labelStyle={styles.connectButtonLabel}
+                    size="lg"
                 >
                     {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                 </Button>
 
-                <Text variant="bodySmall" style={styles.hint}>
+                <Text variant="small" style={styles.hint}>
                     Requires a Solana mobile wallet (Seed Vault recommended)
                 </Text>
 
                 {error && (
-                    <Text variant="bodySmall" style={styles.errorText}>
+                    <Text variant="small" style={styles.errorText}>
                         {error}
                     </Text>
                 )}
@@ -157,13 +154,6 @@ const styles = StyleSheet.create({
     connectButton: {
         width: '100%',
         borderRadius: 14,
-    },
-    connectButtonContent: {
-        paddingVertical: 8,
-    },
-    connectButtonLabel: {
-        fontSize: 16,
-        fontWeight: '700',
     },
     hint: {
         color: '#64748b',

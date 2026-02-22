@@ -1,10 +1,10 @@
 import { StyleSheet, View } from "react-native";
-import { Text } from "react-native-paper";
+import { Text } from "../components/ui";
 export default function BlankScreen() {
   return (
     <>
       <View style={styles.screenContainer}>
-        <Text variant="titleLarge">This is a blank tab!</Text>
+        <Text variant="h3">This is a blank tab!</Text>
       </View>
     </>
   );

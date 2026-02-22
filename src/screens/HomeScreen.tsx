@@ -1,6 +1,6 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { Text } from "react-native-paper";
+import { Text } from "../components/ui";
 
 import { Section } from "../Section";
 import { useAuthorization } from "../utils/useAuthorization";
@@ -14,7 +14,7 @@ export function HomeScreen() {
     <View style={styles.screenContainer}>
       <Text
         style={{ fontWeight: "bold", marginBottom: 12 }}
-        variant="displaySmall"
+        variant="h2"
       >
         Solana Mobile Expo Template
       </Text>

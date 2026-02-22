@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { Button } from "react-native-paper";
+import { Button } from "../ui";
 import { alertAndLog } from "../../utils/alertAndLog";
 import { useAuthorization } from "../../utils/useAuthorization";
 import { useMobileWallet } from "../../utils/useMobileWallet";
@@ -26,7 +26,6 @@ export function ConnectButton() {
   }, [authorizationInProgress, connect]);
   return (
     <Button
-      mode="contained"
       disabled={authorizationInProgress}
       onPress={handleConnectPress}
       style={{ flex: 1 }}
@@ -62,7 +61,7 @@ export function SignInButton() {
   }, [signInInProgress, signIn]);
   return (
     <Button
-      mode="outlined"
+      variant="outline"
       disabled={signInInProgress}
       onPress={handleSignInPress}
       style={{ marginLeft: 4, flex: 1 }}

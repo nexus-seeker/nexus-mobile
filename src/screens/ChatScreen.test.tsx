@@ -31,26 +31,6 @@ jest.mock('expo-blur', () => ({
   BlurView: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-jest.mock('react-native-paper', () => {
-  const React = require('react');
-  const { Button, Text, TextInput, View } = require('react-native');
-
-  const MockCard = ({ children }: { children: React.ReactNode }) => <View>{children}</View>;
-  MockCard.Content = ({ children }: { children: React.ReactNode }) => <View>{children}</View>;
-
-  return {
-    Button: ({ children, onPress }: { children: React.ReactNode; onPress?: () => void }) => (
-      <Button title={String(children ?? '')} onPress={onPress} />
-    ),
-    Card: MockCard,
-    Chip: ({ children }: { children: React.ReactNode }) => <Text>{children}</Text>,
-    Text,
-    TextInput: ({ value, onChangeText, onSubmitEditing }: { value?: string; onChangeText?: (text: string) => void; onSubmitEditing?: () => void }) => (
-      <TextInput value={value} onChangeText={onChangeText} onSubmitEditing={onSubmitEditing} />
-    ),
-  };
-});
-
 jest.mock('../components/ApprovalSheet', () => ({
   ApprovalSheet: ({ visible, onApprove }: { visible: boolean; onApprove: () => void }) => {
     const { Button, Text } = require('react-native');

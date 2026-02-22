@@ -1,12 +1,13 @@
-import { Button, IconButton, Menu, useTheme } from "react-native-paper";
 import { Account, useAuthorization } from "../../utils/useAuthorization";
 import { useMobileWallet } from "../../utils/useMobileWallet";
 import { useNavigation } from "@react-navigation/native";
 import { ellipsify } from "../../utils/ellipsify";
 import { useState } from "react";
 import * as Clipboard from "expo-clipboard";
-import { Linking } from "react-native";
+import { Linking, Pressable, StyleSheet, View, Text as RNText } from "react-native";
 import { useCluster } from "../cluster/cluster-data-access";
+import { Button, Text } from "../ui";
+import { colors, spacing } from "../../theme/shadcn-theme";
 
 export function TopBarWalletButton({
   selectedAccount,
@@ -18,10 +19,9 @@ export function TopBarWalletButton({
   const { connect } = useMobileWallet();
   return (
     <Button
-      icon="wallet"
-      mode="contained-tonal"
       style={{ alignSelf: "center" }}
       onPress={selectedAccount ? openMenu : connect}
+      size="sm"
     >
       {selectedAccount
         ? ellipsify(selectedAccount.publicKey.toBase58())
@@ -33,13 +33,33 @@ export function TopBarWalletButton({
 export function TopBarSettingsButton() {
   const navigation = useNavigation();
   return (
-    <IconButton
-      icon="cog"
-      mode="contained-tonal"
+    <Button
+      variant="ghost"
+      size="sm"
       onPress={() => {
         navigation.navigate("HomeTabs");
       }}
-    />
+    >
+      Settings
+    </Button>
+  );
+}
+
+// Simple Menu Item component
+function MenuItem({
+  onPress,
+  title,
+  icon,
+}: {
+  onPress: () => void;
+  title: string;
+  icon: string;
+}) {
+  return (
+    <Pressable onPress={onPress} style={styles.menuItem}>
+      <RNText style={styles.menuIcon}>{icon}</RNText>
+      <Text variant="p">{title}</Text>
+    </Pressable>
   );
 }
 
@@ -47,9 +67,10 @@ export function TopBarWalletMenu() {
   const { selectedAccount } = useAuthorization();
   const { getExplorerUrl } = useCluster();
   const [visible, setVisible] = useState(false);
+  const { disconnect } = useMobileWallet();
+
   const openMenu = () => setVisible(true);
   const closeMenu = () => setVisible(false);
-  const { disconnect } = useMobileWallet();
 
   const copyAddressToClipboard = async () => {
     if (selectedAccount) {
@@ -68,35 +89,79 @@ export function TopBarWalletMenu() {
     closeMenu();
   };
 
+  const handleDisconnect = async () => {
+    await disconnect();
+    closeMenu();
+  };
+
   return (
-    <Menu
-      visible={visible}
-      onDismiss={closeMenu}
-      anchor={
-        <TopBarWalletButton
-          selectedAccount={selectedAccount}
-          openMenu={openMenu}
-        />
-      }
-    >
-      <Menu.Item
-        onPress={copyAddressToClipboard}
-        title="Copy address"
-        leadingIcon="content-copy"
+    <View>
+      <TopBarWalletButton
+        selectedAccount={selectedAccount}
+        openMenu={openMenu}
       />
-      <Menu.Item
-        onPress={viewExplorer}
-        title="View Explorer"
-        leadingIcon="open-in-new"
-      />
-      <Menu.Item
-        onPress={async () => {
-          await disconnect();
-          closeMenu();
-        }}
-        title="Disconnect"
-        leadingIcon="link-off"
-      />
-    </Menu>
+      {visible && (
+        <View style={styles.menuOverlay}>
+          <Pressable style={styles.backdrop} onPress={closeMenu} />
+          <View style={styles.menu}>
+            <MenuItem
+              onPress={copyAddressToClipboard}
+              title="Copy address"
+              icon="📋"
+            />
+            <MenuItem
+              onPress={viewExplorer}
+              title="View Explorer"
+              icon="🔗"
+            />
+            <MenuItem
+              onPress={handleDisconnect}
+              title="Disconnect"
+              icon="🔌"
+            />
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  menuOverlay: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    zIndex: 1000,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: -1000,
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    backgroundColor: 'transparent',
+  },
+  menu: {
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.sm,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  menuIcon: {
+    fontSize: 16,
+  },
+});

@@ -1,30 +1,36 @@
-import { StyleSheet } from "react-native";
-import { Appbar, useTheme } from "react-native-paper";
-import { TopBarWalletButton, TopBarWalletMenu } from "./top-bar-ui";
+import { StyleSheet, View } from "react-native";
+import { TopBarWalletMenu, TopBarSettingsButton } from "./top-bar-ui";
 import { useNavigation } from "@react-navigation/core";
+import { Button } from "../ui";
+import { colors, spacing } from "../../theme/shadcn-theme";
 
 export function TopBar() {
   const navigation = useNavigation();
-  const theme = useTheme();
 
   return (
-    <Appbar.Header mode="small" style={styles.topBar}>
+    <View style={styles.topBar}>
       <TopBarWalletMenu />
-
-      <Appbar.Action
-        icon="cog"
-        mode="contained-tonal"
+      <Button
+        variant="ghost"
+        size="sm"
         onPress={() => {
           navigation.navigate("HomeTabs");
         }}
-      />
-    </Appbar.Header>
+      >
+        Settings
+      </Button>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   topBar: {
+    flexDirection: 'row',
     justifyContent: "flex-end",
     alignItems: "center",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.background,
+    gap: spacing.sm,
   },
 });

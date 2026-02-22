@@ -1,20 +1,10 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { ScrollView, StyleSheet, View, Pressable, Switch } from "react-native";
-import { Text, TextInput, ActivityIndicator } from "react-native-paper";
-import { LinearGradient } from "expo-linear-gradient";
+import { ScrollView, StyleSheet, View, Switch, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { usePolicy } from "../contexts/PolicyContext";
 import { type PolicyProtocol } from "../features/policy/policy-engine";
-import { colors, spacing, radii, shadows, typography } from "../theme/shadcn-theme";
-
-// Glass Card Component
-function GlassCard({ children, style, accent }: { children: React.ReactNode; style?: any; accent?: boolean }) {
-  return (
-    <View style={[styles.glassCard, accent && styles.glassCardAccent, style]}>
-      {children}
-    </View>
-  );
-}
+import { Button, Card, Input, Text } from "../components/ui";
+import { colors, spacing, radii, typography } from "../theme/shadcn-theme";
 
 // Toggle Row Component
 function ToggleRow({
@@ -58,43 +48,6 @@ function ToggleRow({
   );
 }
 
-// Gradient Button
-function GradientButton({
-  onPress,
-  children,
-  loading = false,
-  disabled = false,
-}: {
-  onPress: () => void;
-  children: React.ReactNode;
-  loading?: boolean;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.button,
-        pressed && styles.buttonPressed,
-        (disabled || loading) && styles.buttonDisabled,
-      ]}
-    >
-      <LinearGradient
-        colors={disabled ? ['#444', '#444'] : colors.gradientPrimary}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.foreground} />
-      ) : (
-        <Text style={styles.buttonText}>{children}</Text>
-      )}
-    </Pressable>
-  );
-}
-
 // Stat Card
 function StatCard({
   icon,
@@ -108,15 +61,11 @@ function StatCard({
   color?: string;
 }) {
   return (
-    <View style={styles.statCard}>
-      <LinearGradient
-        colors={[color + '20', color + '10']}
-        style={StyleSheet.absoluteFill}
-      />
+    <Card style={[styles.statCard, { borderColor: color + '40' }]}>
       <MaterialCommunityIcons name={icon as any} size={24} color={color} />
-      <Text style={styles.statValue}>{value}</Text>
+      <Text style={[styles.statValue, { color }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    </Card>
   );
 }
 
@@ -197,29 +146,24 @@ export function PolicyScreen() {
   if (!isReady) {
     return (
       <View style={styles.loadingState}>
-        <ActivityIndicator animating color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Loading policy...</Text>
+        <ActivityIndicator color={colors.primary} size="large" />
+        <Text variant="muted" style={styles.loadingText}>Loading policy...</Text>
       </View>
     );
   }
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
-      {/* Header */}
-      <LinearGradient
-        colors={colors.gradientPrimary}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.header}
-      >
+      {/* Header - solid */}
+      <View style={styles.header}>
         <View style={styles.headerContent}>
-          <MaterialCommunityIcons name="shield" size={32} color={colors.foreground} />
-          <Text style={styles.headerTitle}>Permission Vault</Text>
-          <Text style={styles.headerSubtitle}>
-            Control your agent's permissions and limits
+          <MaterialCommunityIcons name="shield" size={28} color={colors.foreground} />
+          <Text variant="h3" style={{ marginTop: spacing.sm }}>Permission Vault</Text>
+          <Text variant="muted" style={{ marginTop: spacing.xs, textAlign: 'center' }}>
+            Control your agent's permissions
           </Text>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Stats Row */}
       <View style={styles.statsRow}>
@@ -244,28 +188,17 @@ export function PolicyScreen() {
       </View>
 
       {/* Main Policy Card */}
-      <GlassCard accent style={styles.policyCard}>
+      <Card variant="outline" style={styles.policyCard}>
         {/* Daily Limit Input */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Daily Spend Limit (SOL)</Text>
-          <View style={styles.inputBlur}>
-            <TextInput
-              mode="flat"
-              value={dailyLimitSol}
-              onChangeText={setDailyLimitSol}
-              keyboardType="decimal-pad"
-              style={styles.input}
-              underlineColor="transparent"
-              activeUnderlineColor="transparent"
-              left={<TextInput.Icon icon="currency-usd" color={colors.foregroundMuted} />}
-              theme={{
-                colors: {
-                  text: colors.foreground,
-                  placeholder: colors.foregroundSubtle,
-                },
-              }}
-            />
-          </View>
+          <Text variant="muted" style={styles.inputLabel}>Daily Spend Limit (SOL)</Text>
+          <Input
+            value={dailyLimitSol}
+            onChangeText={setDailyLimitSol}
+            keyboardType="decimal-pad"
+            placeholder="0.00"
+            icon={<MaterialCommunityIcons name="currency-usd" size={20} color={colors.foregroundMuted} />}
+          />
           {isLimitInvalid && (
             <Text style={styles.errorHelper}>Enter a valid non-negative SOL limit</Text>
           )}
@@ -322,13 +255,14 @@ export function PolicyScreen() {
         </View>
 
         {/* Save Button */}
-        <GradientButton
+        <Button
           onPress={onSavePolicy}
           loading={isSaving}
           disabled={isSaving || isLimitInvalid}
+          style={styles.saveButton}
         >
           Save Policy
-        </GradientButton>
+        </Button>
 
         {/* Messages */}
         {lastError && (
@@ -347,22 +281,22 @@ export function PolicyScreen() {
 
         {lastSyncSignature && (
           <View style={styles.syncInfo}>
-            <Text style={styles.syncLabel}>Last Sync:</Text>
+            <Text variant="muted" style={styles.syncLabel}>Last Sync:</Text>
             <Text style={styles.syncSignature}>
               {lastSyncSignature.slice(0, 8)}...{lastSyncSignature.slice(-8)}
             </Text>
           </View>
         )}
-      </GlassCard>
+      </Card>
 
       {/* Info Card */}
-      <GlassCard style={styles.infoCard}>
+      <Card style={styles.infoCard}>
         <MaterialCommunityIcons name="information" size={20} color={colors.primaryLight} />
-        <Text style={styles.infoText}>
+        <Text variant="muted" style={styles.infoText}>
           Policy changes require biometric authentication. Your policy is stored both
           locally and synced to the blockchain for transparency.
         </Text>
-      </GlassCard>
+      </Card>
     </ScrollView>
   );
 }
@@ -376,23 +310,12 @@ const styles = StyleSheet.create({
   header: {
     borderRadius: radii.xl,
     padding: spacing.xl,
-    ...shadows.lg,
+    backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   headerContent: {
     alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: typography.size2xl,
-    fontWeight: typography.weightBold,
-    color: colors.foreground,
-    marginTop: spacing.sm,
-  },
-  headerSubtitle: {
-    fontSize: typography.sizeSm,
-    color: colors.foreground,
-    opacity: 0.8,
-    marginTop: spacing.xs,
-    textAlign: "center",
   },
   statsRow: {
     flexDirection: "row",
@@ -400,18 +323,13 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: colors.backgroundElevated,
-    borderRadius: radii.lg,
     padding: spacing.md,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: colors.border,
-    overflow: "hidden",
   },
   statValue: {
     fontSize: typography.sizeLg,
     fontWeight: typography.weightBold,
-    color: colors.foreground,
     marginTop: spacing.xs,
     fontFamily: typography.fontMono,
   },
@@ -419,17 +337,6 @@ const styles = StyleSheet.create({
     fontSize: typography.sizeXs,
     color: colors.foregroundMuted,
     marginTop: spacing.xs,
-  },
-  glassCard: {
-    backgroundColor: colors.backgroundElevated,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: "hidden",
-  },
-  glassCardAccent: {
-    borderColor: colors.primary,
-    borderWidth: 1,
   },
   policyCard: {
     padding: spacing.xl,
@@ -441,17 +348,6 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: typography.sizeSm,
     fontWeight: typography.weightMedium,
-    color: colors.foregroundMuted,
-  },
-  inputBlur: {
-    borderRadius: radii.lg,
-    overflow: "hidden",
-  },
-  input: {
-    backgroundColor: colors.backgroundTertiary,
-    height: 56,
-    fontSize: typography.sizeLg,
-    color: colors.foreground,
   },
   errorHelper: {
     color: colors.error,
@@ -516,26 +412,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  button: {
-    borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadows.md,
-    overflow: "hidden",
-  },
-  buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.foreground,
-    fontSize: typography.sizeBase,
-    fontWeight: typography.weightSemibold,
+  saveButton: {
+    marginTop: spacing.md,
   },
   messageError: {
     flexDirection: "row",
@@ -575,7 +453,6 @@ const styles = StyleSheet.create({
   },
   syncLabel: {
     fontSize: typography.sizeXs,
-    color: colors.foregroundMuted,
   },
   syncSignature: {
     fontSize: typography.sizeXs,
@@ -587,12 +464,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: spacing.md,
     padding: spacing.lg,
-    backgroundColor: colors.glass,
   },
   infoText: {
     flex: 1,
     fontSize: typography.sizeSm,
-    color: colors.foregroundMuted,
     lineHeight: 20,
   },
   loadingState: {
@@ -603,7 +478,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   loadingText: {
-    color: colors.foregroundMuted,
     fontSize: typography.sizeBase,
   },
 });
