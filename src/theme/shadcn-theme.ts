@@ -56,6 +56,14 @@ export const colors = {
   gradientSurface: ['rgba(139, 92, 246, 0.1)', 'rgba(6, 182, 212, 0.05)'] as const,
 };
 
+// Font weights as const for type safety
+export const fontWeights = {
+  normal: '400' as const,
+  medium: '500' as const,
+  semibold: '600' as const,
+  bold: '700' as const,
+};
+
 export const typography = {
   // Font families
   fontSans: 'System',
@@ -71,11 +79,11 @@ export const typography = {
   size3xl: 30,
   size4xl: 36,
 
-  // Font weights
-  weightNormal: '400',
-  weightMedium: '500',
-  weightSemibold: '600',
-  weightBold: '700',
+  // Font weights - using const assertion for proper types
+  weightNormal: '400' as const,
+  weightMedium: '500' as const,
+  weightSemibold: '600' as const,
+  weightBold: '700' as const,
 
   // Line heights
   leadingTight: 20,

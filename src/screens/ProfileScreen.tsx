@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import { StyleSheet, View, Pressable, ScrollView, Clipboard } from "react-native";
 import { Text, ActivityIndicator } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuthorization } from "../utils/useAuthorization";
 import { useMobileWallet } from "../utils/useMobileWallet";
@@ -261,8 +260,8 @@ export function ProfileScreen() {
               color={statusText.includes("failed") ? colors.error : colors.primaryLight}
             />
             <Text style={[
-              styles.statusText,
-              statusText.includes("failed") && styles.statusTextError
+              styles.messageStatusText,
+              statusText.includes("failed") && styles.messageStatusTextError
             ]}>
               {statusText}
             </Text>
@@ -483,12 +482,12 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radii.md,
   },
-  statusText: {
+  messageStatusText: {
     fontSize: typography.sizeSm,
     color: colors.foregroundMuted,
     flex: 1,
   },
-  statusTextError: {
+  messageStatusTextError: {
     color: colors.error,
   },
   footer: {

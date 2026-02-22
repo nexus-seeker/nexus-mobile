@@ -40,22 +40,6 @@ function GlassCard({ children, style, gradient = false }: { children: React.Reac
   );
 }
 
-// Modern Badge Component
-function Badge({ children, variant = 'default' }: { children: React.ReactNode; variant?: 'default' | 'success' | 'error' | 'warning' }) {
-  const variantStyles = {
-    default: styles.badgeDefault,
-    success: styles.badgeSuccess,
-    error: styles.badgeError,
-    warning: styles.badgeWarning,
-  };
-
-  return (
-    <View style={[styles.badge, variantStyles[variant]]}>
-      <Text style={styles.badgeText}>{children}</Text>
-    </View>
-  );
-}
-
 // Gradient Button
 function GradientButton({
   onPress,

@@ -146,7 +146,7 @@ function EmptyState() {
         colors={colors.gradientSurface}
         style={styles.emptyIconContainer}
       >
-        <MaterialCommunityIcons name="receipt-text-outline" size={48} color={colors.primaryLight} />
+        <MaterialCommunityIcons name="receipt" size={48} color={colors.primaryLight} />
       </LinearGradient>
       <Text style={styles.emptyTitle}>No receipts yet</Text>
       <Text style={styles.emptySubtitle}>

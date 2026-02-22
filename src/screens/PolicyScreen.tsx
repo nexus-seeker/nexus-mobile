@@ -1,8 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { ScrollView, StyleSheet, View, Pressable, Switch } from "react-native";
 import { Text, TextInput, ActivityIndicator } from "react-native-paper";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { usePolicy } from "../contexts/PolicyContext";
 import { type PolicyProtocol } from "../features/policy/policy-engine";
@@ -142,11 +141,16 @@ export function PolicyScreen() {
   const [isActive, setIsActive] = useState(policy.isActive ?? true);
   const [lastSuccess, setLastSuccess] = useState<string | null>(null);
 
+  // Sync state when policy changes - deferred to avoid cascading render warning
   useEffect(() => {
-    setDailyLimitSol(String(policy.dailyLimitSol));
-    setAllowedJupiter(policy.allowedProtocols.includes("JUPITER"));
-    setAllowedTransfers(policy.allowedProtocols.includes("SPL_TRANSFER"));
-    setIsActive(policy.isActive ?? true);
+    // Defer state updates to next tick to avoid synchronous setState during render
+    const timeoutId = setTimeout(() => {
+      setDailyLimitSol(String(policy.dailyLimitSol));
+      setAllowedJupiter(policy.allowedProtocols.includes("JUPITER"));
+      setAllowedTransfers(policy.allowedProtocols.includes("SPL_TRANSFER"));
+      setIsActive(policy.isActive ?? true);
+    }, 0);
+    return () => clearTimeout(timeoutId);
   }, [policy]);
 
   const parsedDailyLimit = useMemo(
@@ -244,7 +248,7 @@ export function PolicyScreen() {
         {/* Daily Limit Input */}
         <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Daily Spend Limit (SOL)</Text>
-          <BlurView intensity={20} tint="dark" style={styles.inputBlur}>
+          <View style={styles.inputBlur}>
             <TextInput
               mode="flat"
               value={dailyLimitSol}
@@ -261,7 +265,7 @@ export function PolicyScreen() {
                 },
               }}
             />
-          </BlurView>
+          </View>
           {isLimitInvalid && (
             <Text style={styles.errorHelper}>Enter a valid non-negative SOL limit</Text>
           )}
