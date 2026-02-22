@@ -1,7 +1,3 @@
-/**
- * The app navigator (formerly "AppNavigator" and "MainNavigator") is used for the primary
- * navigation flows of your app.
- */
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
@@ -10,25 +6,23 @@ import {
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { useColorScheme } from "react-native";
+import { StatusBar } from "expo-status-bar";
 import { HomeNavigator } from "./HomeNavigator";
 import { WalletConnectScreen } from "../screens/WalletConnectScreen";
-import { StatusBar } from "expo-status-bar";
+import { OnboardingScreen } from "../screens/OnboardingScreen";
 
 /**
- * This type allows TypeScript to know what routes are defined in this navigator
- * as well as what properties (if any) they might take when navigating to them.
+ * Navigation flow:
+ *   WalletConnect → Onboarding (auto-checks status) → HomeTabs
  *
- * If no params are allowed, pass through `undefined`.
- *
- * For more information, see this documentation:
- *   https://reactnavigation.org/docs/params/
- *   https://reactnavigation.org/docs/typescript#type-checking-the-navigator
- *   https://reactnavigation.org/docs/typescript/#organizing-types
- *
+ * The Onboarding screen handles the wallet setup gate — if the wallet is
+ * already initialized it passes through instantly; if not, it presents
+ * the explicit Set Up Wallet UI before unlocking the app.
  */
 
 type RootStackParamList = {
   WalletConnect: undefined;
+  Onboarding: undefined;
   HomeTabs: undefined;
 };
 
@@ -42,17 +36,29 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppStack = () => {
   return (
-    <Stack.Navigator initialRouteName={"WalletConnect"}>
-      <Stack.Screen
-        name="WalletConnect"
-        options={{ headerShown: false }}
-      >
+    <Stack.Navigator initialRouteName="WalletConnect">
+      {/* Step 1: connect wallet */}
+      <Stack.Screen name="WalletConnect" options={{ headerShown: false }}>
         {(props) => (
           <WalletConnectScreen
-            onConnected={() => props.navigation.replace('HomeTabs')}
+            onConnected={() => props.navigation.replace("Onboarding")}
           />
         )}
       </Stack.Screen>
+
+      {/* Step 2: onboarding gate — passes straight through if already set up */}
+      <Stack.Screen
+        name="Onboarding"
+        options={{ headerShown: false, gestureEnabled: false }}
+      >
+        {(props) => (
+          <OnboardingScreen
+            onComplete={() => props.navigation.replace("HomeTabs")}
+          />
+        )}
+      </Stack.Screen>
+
+      {/* Step 3: main app */}
       <Stack.Screen
         name="HomeTabs"
         component={HomeNavigator}
@@ -67,13 +73,11 @@ export interface NavigationProps
 
 export const AppNavigator = (props: NavigationProps) => {
   const colorScheme = useColorScheme();
-  const theme = colorScheme === "dark" ? NavigationDarkTheme : NavigationDefaultTheme;
+  const theme =
+    colorScheme === "dark" ? NavigationDarkTheme : NavigationDefaultTheme;
 
   return (
-    <NavigationContainer
-      theme={theme}
-      {...props}
-    >
+    <NavigationContainer theme={theme} {...props}>
       <StatusBar />
       <AppStack />
     </NavigationContainer>

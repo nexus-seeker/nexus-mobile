@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Animated } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button, Text, Card } from '../components/ui';
 import { useMobileWallet } from '../utils/useMobileWallet';
 import { useAuthorization } from '../utils/useAuthorization';
@@ -14,6 +14,7 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
     const [isConnecting, setIsConnecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // If already connected (e.g. app relaunch), proceed immediately
     useEffect(() => {
         if (selectedAccount) {
             onConnected();
@@ -33,7 +34,6 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
         }
     };
 
-    // If already connected, transition to HomeTabs via onConnected() effect.
     if (selectedAccount) {
         return null;
     }

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthorization } from '../utils/useAuthorization';
+import { useNavigation } from '@react-navigation/native';
 import { useAgentRun } from '../hooks/useAgentRun';
 import { StepCard } from '../components/StepCard';
 import { ApprovalSheet } from '../components/ApprovalSheet';
@@ -47,7 +48,8 @@ function StatusIndicator({ status }: { status: string }) {
 }
 
 export function ChatScreen() {
-  const { selectedAccount } = useAuthorization();
+  const { selectedAccount, authorizeSession } = useAuthorization();
+  const navigation = useNavigation();
   const [intent, setIntent] = useState('');
   const [isApprovalSheetVisible, setIsApprovalSheetVisible] = useState(false);
   const {
@@ -89,6 +91,13 @@ export function ChatScreen() {
     (rejectionField === 'jupiter' ||
       (rejectionField === 'tx_assembly' &&
         (error?.includes('InvalidProgramForExecution') ?? false)));
+  const showOnboardingPrompt = runState === 'rejected' && rejectionField === 'not_onboarded' && !!pubkey;
+
+  // Navigate back to the onboarding gate so the user can set up properly
+  function handleGoToSetup() {
+    resetRun();
+    navigation.navigate('Onboarding' as never);
+  }
 
   async function handleDemoSafeTransfer() {
     if (!pubkey) return;
@@ -168,6 +177,22 @@ export function ChatScreen() {
             </Text>
             <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>{error}</Text>
           </View>
+        )}
+
+        {showOnboardingPrompt && (
+          <Card variant="outline" style={styles.fallbackCard}>
+            <MaterialCommunityIcons name="shield-account" size={28} color={colors.primary} />
+            <Text style={styles.fallbackTitle}>Wallet not set up yet</Text>
+            <Text variant="muted" style={styles.fallbackText}>
+              Your wallet needs a one-time on-chain setup before the agent can run.
+            </Text>
+            <Button
+              onPress={handleGoToSetup}
+              style={styles.fallbackButton}
+            >
+              Go to Setup
+            </Button>
+          </Card>
         )}
 
         {showDemoSafeTransfer && (

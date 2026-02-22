@@ -4,9 +4,9 @@ import {
     type AgentRunResult,
     openAgentStream,
     type StepEvent,
+    broadcastOnboardTx as broadcastSignedTx,
 } from '../services/agent/agent-api';
 import { useAuthorization } from '../utils/useAuthorization';
-import { useConnection } from '../utils/ConnectionProvider';
 import {
     VersionedTransaction,
 } from '@solana/web3.js';
@@ -23,7 +23,6 @@ export type AgentRunState =
 
 export function useAgentRun() {
     const { selectedAccount, authorizeSession } = useAuthorization();
-    const { connection } = useConnection();
     const closeStreamRef = useRef<(() => void) | null>(null);
     const streamRunTokenRef = useRef<number | null>(null);
     const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -252,44 +251,32 @@ export function useAgentRun() {
         try {
             setRunState('signing');
 
-            // 1. Deserialize the base64 VersionedTransaction
+            // 1. Deserialize the unsigned tx (blockhash already set by API)
             const txBytes = Buffer.from(result.unsignedTx, 'base64');
             const unsignedTx = VersionedTransaction.deserialize(txBytes);
 
-            // 2. Get fresh blockhash
-            const { blockhash, lastValidBlockHeight } =
-                await connection.getLatestBlockhash('confirmed');
-            unsignedTx.message.recentBlockhash = blockhash;
-
-            // 3. MWA transact → Seed Vault intercepts → fingerprint
+            // 2. Sign via Seed Vault — sign only, do NOT broadcast from the device
+            //    (device may not have direct devnet RPC access via USB)
+            let signedTxBase64 = '';
             await transact(async (wallet) => {
                 await authorizeSession(wallet);
-
-                const signedTransactions = await wallet.signTransactions({
+                const [signed] = await wallet.signTransactions({
                     transactions: [unsignedTx],
                 });
-
-                const signedTx = signedTransactions[0];
-
-                // 4. Broadcast signed tx
-                const sig = await connection.sendRawTransaction(
-                    signedTx.serialize(),
-                    { skipPreflight: false, maxRetries: 3 },
-                );
-
-                await connection.confirmTransaction(
-                    { signature: sig, blockhash, lastValidBlockHeight },
-                    'confirmed',
-                );
-
-                setConfirmedSig(sig);
-                setRunState('confirmed');
+                signedTxBase64 = Buffer.from(signed.serialize()).toString('base64');
             });
+
+            // 3. Relay broadcast through API server (which has confirmed devnet connectivity)
+            const { signature } = await broadcastSignedTx(signedTxBase64);
+
+            setConfirmedSig(signature);
+            setRunState('confirmed');
         } catch (err: any) {
             setError(err.message || 'Transaction signing failed');
             setRunState('error');
         }
-    }, [result, selectedAccount, connection, authorizeSession]);
+    }, [result, selectedAccount, authorizeSession]);
+
 
     return {
         // State

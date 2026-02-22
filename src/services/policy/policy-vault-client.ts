@@ -13,17 +13,34 @@ const LAMPORTS_PER_SOL = 1_000_000_000;
 const DEFAULT_POLICY_VAULT_SEED = "policy";
 const DEFAULT_AGENT_PROFILE_SEED = "profile";
 
-const CREATE_PROFILE_DISCRIMINATOR = Uint8Array.from([
-  225, 205, 234, 143, 17, 186, 50, 220,
-]);
-
-const UPDATE_POLICY_DISCRIMINATOR = Uint8Array.from([
-  212, 245, 246, 7, 163, 151, 18, 57,
-]);
+// Hardcoded discriminators removed — now computed dynamically via anchorDiscriminator()
+// Original values for reference:
+//   create_profile: [225, 205, 234, 143, 17, 186, 50, 220]
+//   update_policy:  [212, 245, 246,   7, 163, 151, 18,  57]
+//   policy_vault account: verified below during fetch
 
 const POLICY_VAULT_ACCOUNT_DISCRIMINATOR = Uint8Array.from([
   180, 22, 67, 48, 87, 214, 158, 120,
 ]);
+
+/**
+ * Derives an Anchor instruction discriminator: first 8 bytes of SHA-256("global:<name>").
+ * Uses crypto.subtle (available in Hermes/RN ≥ 0.70) with a pure-JS fallback.
+ */
+async function anchorDiscriminator(instructionName: string): Promise<Uint8Array> {
+  const input = `global:${instructionName}`;
+  const encoded = new TextEncoder().encode(input);
+
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+    return new Uint8Array(hashBuffer).slice(0, 8);
+  }
+
+  // Pure-JS SHA-256 fallback (for older RN/Jest environments)
+  const { createHash } = require('crypto') as typeof import('crypto');
+  const digest = createHash('sha256').update(input).digest();
+  return new Uint8Array(digest).slice(0, 8);
+}
 
 type PolicySigner = (
   transaction: VersionedTransaction,
@@ -102,6 +119,7 @@ export function createPolicyVaultClient(options?: {
       const instructions: InstanceType<typeof TransactionInstruction>[] = [];
 
       if (!profileAccount) {
+        const createProfileDiscriminator = await anchorDiscriminator('create_profile');
         instructions.push(
           new TransactionInstruction({
             programId,
@@ -110,12 +128,13 @@ export function createPolicyVaultClient(options?: {
               { pubkey: authority, isSigner: true, isWritable: true },
               { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
             ],
-            data: Buffer.from(CREATE_PROFILE_DISCRIMINATOR),
+            data: Buffer.from(createProfileDiscriminator),
           })
         );
       }
 
-      const instructionData = buildUpdatePolicyInstructionData(input.policy);
+      const updatePolicyDiscriminator = await anchorDiscriminator('update_policy');
+      const instructionData = buildUpdatePolicyInstructionData(input.policy, updatePolicyDiscriminator);
 
       const instruction = new TransactionInstruction({
         programId,
@@ -137,7 +156,7 @@ export function createPolicyVaultClient(options?: {
         payerKey: authority,
         recentBlockhash: latestBlockhash.blockhash,
         instructions,
-      }).compileToLegacyMessage();
+      }).compileToV0Message();
 
       const transaction = new VersionedTransaction(message);
 
@@ -222,7 +241,7 @@ export function deriveAgentProfileAddress(
   return { address, bump };
 }
 
-function buildUpdatePolicyInstructionData(policy: PolicyState): Uint8Array {
+function buildUpdatePolicyInstructionData(policy: PolicyState, discriminator: Uint8Array): Uint8Array {
   const dailyMaxLamports = toLamports(policy.dailyLimitSol);
   const dailyMaxBuffer = Buffer.alloc(8);
   dailyMaxBuffer.writeBigUInt64LE(dailyMaxLamports);
@@ -241,7 +260,7 @@ function buildUpdatePolicyInstructionData(policy: PolicyState): Uint8Array {
   const isActiveBuffer = Buffer.from([policy.isActive ? 1 : 0]);
 
   return concatBytes(
-    UPDATE_POLICY_DISCRIMINATOR,
+    discriminator,
     Buffer.concat([
       dailyMaxBuffer,
       vecLenBuffer,

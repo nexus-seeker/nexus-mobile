@@ -251,6 +251,52 @@ export async function updatePolicy(
   return data.unsignedTx;
 }
 
+/**
+ * Calls POST /policy/onboard to retrieve the two unsigned setup transactions
+ * for an uninitialized wallet.
+ *
+ * Returns { alreadyOnboarded: true } if the wallet is already set up.
+ * Returns { alreadyOnboarded: false, createProfileTx, updatePolicyTx } otherwise.
+ */
+export async function onboardWallet(pubkey: string): Promise<{
+  alreadyOnboarded: boolean;
+  /** Single atomic unsigned base64 VersionedTransaction containing create_profile (+ update_policy if needed) */
+  onboardTx: string | null;
+}> {
+  const response = await fetch(`${API_BASE_URL}/policy/onboard`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ pubkey }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Onboard request failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Sends a signed base64 VersionedTransaction to the API for broadcast.
+ * The API relays it to Solana devnet — use this instead of calling
+ * connection.sendRawTransaction() from the device, which may not have
+ * direct devnet access.
+ */
+export async function broadcastOnboardTx(signedTxBase64: string): Promise<{ signature: string }> {
+  const response = await fetch(`${API_BASE_URL}/policy/onboard/broadcast`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ signedTx: signedTxBase64 }),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error((body as any)?.message ?? `Broadcast failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
 export async function fetchReceipts(pubkey: string): Promise<ReceiptDto[]> {
   const response = await fetch(
     `${API_BASE_URL}/receipts?pubkey=${encodeURIComponent(pubkey)}`,
