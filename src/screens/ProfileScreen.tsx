@@ -1,58 +1,11 @@
 import React, { useMemo, useState } from "react";
-import { StyleSheet, View, Pressable, ScrollView, Clipboard } from "react-native";
-import { Text, ActivityIndicator } from "react-native-paper";
-import { LinearGradient } from "expo-linear-gradient";
+import { StyleSheet, View, Pressable, ScrollView, Clipboard, ActivityIndicator } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuthorization } from "../utils/useAuthorization";
 import { useMobileWallet } from "../utils/useMobileWallet";
 import { ellipsify } from "../utils/ellipsify";
-import { colors, spacing, radii, shadows, typography } from "../theme/shadcn-theme";
-
-// Gradient Button Component
-function GradientButton({
-  onPress,
-  children,
-  loading = false,
-  disabled = false,
-  variant = 'primary',
-}: {
-  onPress: () => void;
-  children: React.ReactNode;
-  loading?: boolean;
-  disabled?: boolean;
-  variant?: 'primary' | 'secondary' | 'danger';
-}) {
-  const gradientColors = {
-    primary: colors.gradientPrimary,
-    secondary: [colors.backgroundTertiary, colors.backgroundTertiary] as const,
-    danger: colors.gradientError,
-  };
-
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled || loading}
-      style={({ pressed }) => [
-        styles.button,
-        variant === 'secondary' && styles.buttonSecondary,
-        pressed && styles.buttonPressed,
-        (disabled || loading) && styles.buttonDisabled,
-      ]}
-    >
-      <LinearGradient
-        colors={disabled ? ['#444', '#444'] : gradientColors[variant]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      {loading ? (
-        <ActivityIndicator size="small" color={colors.foreground} />
-      ) : (
-        <Text style={styles.buttonText}>{children}</Text>
-      )}
-    </Pressable>
-  );
-}
+import { Button, Card, Text, Badge } from "../components/ui";
+import { colors, spacing, radii, typography } from "../theme/shadcn-theme";
 
 // Info Card Component
 function InfoCard({
@@ -73,32 +26,20 @@ function InfoCard({
   };
 
   return (
-    <View style={styles.infoCard}>
+    <Card style={styles.infoCard}>
       <View style={styles.infoIconContainer}>
         <MaterialCommunityIcons name={icon as any} size={20} color={colors.primaryLight} />
       </View>
       <View style={styles.infoContent}>
-        <Text style={styles.infoLabel}>{label}</Text>
+        <Text variant="small" style={styles.infoLabel}>{label}</Text>
         <Pressable onPress={copyable ? handleCopy : undefined} style={styles.valueContainer}>
-          <Text style={styles.infoValue}>{value}</Text>
+          <Text variant="small" style={styles.infoValue}>{value}</Text>
           {copyable && (
             <MaterialCommunityIcons name="content-copy" size={14} color={colors.foregroundMuted} />
           )}
         </Pressable>
       </View>
-    </View>
-  );
-}
-
-// Status Badge
-function ConnectionStatus({ connected }: { connected: boolean }) {
-  return (
-    <View style={[styles.statusBadge, connected ? styles.statusConnected : styles.statusDisconnected]}>
-      <View style={[styles.statusDot, { backgroundColor: connected ? colors.success : colors.error }]} />
-      <Text style={[styles.statusText, { color: connected ? colors.success : colors.error }]}>
-        {connected ? 'Connected' : 'Disconnected'}
-      </Text>
-    </View>
+    </Card>
   );
 }
 
@@ -148,36 +89,30 @@ export function ProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.screen}>
-      {/* Header */}
-      <LinearGradient
-        colors={colors.gradientPrimary}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.header}
-      >
+      {/* Header - solid with border */}
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.avatarContainer}>
-            <LinearGradient
-              colors={colors.gradientSurface}
-              style={styles.avatarGradient}
-            >
+            <View style={styles.avatar}>
               <MaterialCommunityIcons
                 name={selectedAccount ? "account-circle" : "account-circle-outline"}
-                size={48}
+                size={44}
                 color={colors.foreground}
               />
-            </LinearGradient>
+            </View>
           </View>
-          <Text style={styles.headerTitle}>Agent Profile</Text>
-          <ConnectionStatus connected={!!selectedAccount} />
+          <Text variant="h3">Profile</Text>
+          <Badge variant={selectedAccount ? "default" : "destructive"}>
+            {selectedAccount ? 'Connected' : 'Disconnected'}
+          </Badge>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Main Content */}
       <View style={styles.content}>
         {/* Wallet Info Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Wallet Information</Text>
+          <Text variant="small" style={styles.sectionTitle}>Wallet Information</Text>
 
           {selectedAccount ? (
             <>
@@ -195,59 +130,59 @@ export function ProfileScreen() {
               />
             </>
           ) : (
-            <View style={styles.connectPrompt}>
-              <LinearGradient
-                colors={colors.gradientSurface}
-                style={styles.connectIconBg}
-              >
+            <Card variant="outline" style={styles.connectPrompt}>
+              <View style={styles.connectIconBg}>
                 <MaterialCommunityIcons name="wallet-outline" size={32} color={colors.primaryLight} />
-              </LinearGradient>
-              <Text style={styles.connectTitle}>Connect Your Wallet</Text>
-              <Text style={styles.connectSubtitle}>
+              </View>
+              <Text variant="h4" style={styles.connectTitle}>Connect Your Wallet</Text>
+              <Text variant="muted" style={styles.connectSubtitle}>
                 Connect your Solana wallet to access all NEXUS features
               </Text>
-            </View>
+            </Card>
           )}
         </View>
 
         {/* Genesis Perks Section */}
         {selectedAccount && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Genesis Perks</Text>
-            <View style={styles.perksCard}>
-              <View style={styles.perkItem}>
-                <View style={styles.perkIconContainer}>
-                  <MaterialCommunityIcons name="crown" size={20} color={colors.accent} />
+            <Text variant="small" style={styles.sectionTitle}>Genesis Perks</Text>
+            <Card>
+              <Card.Content>
+                <View style={styles.perkItem}>
+                  <View style={styles.perkIconContainer}>
+                    <MaterialCommunityIcons name="crown" size={20} color={colors.accent} />
+                  </View>
+                  <View>
+                    <Text variant="p" style={styles.perkName}>Genesis Member</Text>
+                    <Text variant="small" style={styles.perkStatus}>Pending on-chain verification</Text>
+                  </View>
                 </View>
-                <View>
-                  <Text style={styles.perkName}>Genesis Member</Text>
-                  <Text style={styles.perkStatus}>Pending on-chain verification</Text>
-                </View>
-              </View>
-            </View>
+              </Card.Content>
+            </Card>
           </View>
         )}
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
           {!selectedAccount ? (
-            <GradientButton
+            <Button
               onPress={onConnect}
               loading={isBusy}
               disabled={isBusy}
-              variant="primary"
+              size="lg"
             >
               Connect Wallet
-            </GradientButton>
+            </Button>
           ) : (
-            <GradientButton
+            <Button
               onPress={onDisconnect}
               loading={isBusy}
               disabled={isBusy}
-              variant="danger"
+              variant="destructive"
+              size="lg"
             >
               Disconnect Wallet
-            </GradientButton>
+            </Button>
           )}
         </View>
 
@@ -259,10 +194,13 @@ export function ProfileScreen() {
               size={16}
               color={statusText.includes("failed") ? colors.error : colors.primaryLight}
             />
-            <Text style={[
-              styles.messageStatusText,
-              statusText.includes("failed") && styles.messageStatusTextError
-            ]}>
+            <Text
+              variant="small"
+              style={[
+                styles.messageStatusText,
+                statusText.includes("failed") && styles.messageStatusTextError
+              ]}
+            >
               {statusText}
             </Text>
           </View>
@@ -271,7 +209,7 @@ export function ProfileScreen() {
         {/* Info Footer */}
         <View style={styles.footer}>
           <MaterialCommunityIcons name="shield-check" size={16} color={colors.foregroundMuted} />
-          <Text style={styles.footerText}>
+          <Text variant="small" style={styles.footerText}>
             Your wallet connection is secured by Mobile Wallet Adapter
           </Text>
         </View>
@@ -289,8 +227,9 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
-    borderBottomLeftRadius: radii['2xl'],
-    borderBottomRightRadius: radii['2xl'],
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerContent: {
     alignItems: 'center',
@@ -298,43 +237,15 @@ const styles = StyleSheet.create({
   avatarContainer: {
     marginBottom: spacing.md,
   },
-  avatarGradient: {
-    width: 80,
-    height: 80,
+  avatar: {
+    width: 72,
+    height: 72,
     borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.glassBorder,
-  },
-  headerTitle: {
-    fontSize: typography.size2xl,
-    fontWeight: typography.weightBold,
-    color: colors.foreground,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.full,
-    marginTop: spacing.sm,
-  },
-  statusConnected: {
-    backgroundColor: colors.successMuted,
-  },
-  statusDisconnected: {
-    backgroundColor: colors.errorMuted,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: typography.sizeXs,
-    fontWeight: typography.weightMedium,
+    backgroundColor: colors.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   content: {
     padding: spacing.lg,
@@ -344,20 +255,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   sectionTitle: {
-    fontSize: typography.sizeXs,
-    fontWeight: typography.weightSemibold,
     color: colors.primaryLight,
     letterSpacing: 2,
     textTransform: 'uppercase',
+    fontWeight: typography.weightSemibold,
   },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundElevated,
-    borderRadius: radii.lg,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   infoIconContainer: {
     width: 40,
@@ -372,7 +278,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   infoLabel: {
-    fontSize: typography.sizeXs,
     color: colors.foregroundMuted,
     marginBottom: 2,
   },
@@ -382,7 +287,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   infoValue: {
-    fontSize: typography.sizeSm,
     color: colors.foreground,
     fontFamily: typography.fontMono,
     fontWeight: typography.weightMedium,
@@ -390,10 +294,6 @@ const styles = StyleSheet.create({
   connectPrompt: {
     alignItems: 'center',
     paddingVertical: spacing.xl,
-    backgroundColor: colors.backgroundElevated,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
     borderStyle: 'dashed',
   },
   connectIconBg: {
@@ -403,25 +303,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
+    backgroundColor: colors.backgroundTertiary,
   },
   connectTitle: {
-    fontSize: typography.sizeLg,
-    fontWeight: typography.weightSemibold,
     color: colors.foreground,
   },
   connectSubtitle: {
-    fontSize: typography.sizeSm,
-    color: colors.foregroundMuted,
     textAlign: 'center',
     marginTop: spacing.xs,
     paddingHorizontal: spacing.xl,
-  },
-  perksCard: {
-    backgroundColor: colors.backgroundElevated,
-    borderRadius: radii.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   perkItem: {
     flexDirection: 'row',
@@ -437,42 +327,15 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   perkName: {
-    fontSize: typography.sizeBase,
-    fontWeight: typography.weightMedium,
     color: colors.foreground,
+    fontWeight: typography.weightMedium,
   },
   perkStatus: {
-    fontSize: typography.sizeXs,
     color: colors.foregroundMuted,
     marginTop: 2,
   },
   actionSection: {
     marginTop: spacing.md,
-  },
-  button: {
-    borderRadius: radii.lg,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.md,
-    overflow: 'hidden',
-  },
-  buttonSecondary: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  buttonPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.98 }],
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: colors.foreground,
-    fontSize: typography.sizeBase,
-    fontWeight: typography.weightSemibold,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -483,7 +346,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
   },
   messageStatusText: {
-    fontSize: typography.sizeSm,
     color: colors.foregroundMuted,
     flex: 1,
   },
@@ -498,7 +360,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   footerText: {
-    fontSize: typography.sizeXs,
     color: colors.foregroundMuted,
     textAlign: 'center',
   },
