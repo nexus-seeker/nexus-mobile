@@ -22,32 +22,32 @@ const styles = StyleSheet.create({
   h1: {
     fontSize: typography.size4xl,
     fontWeight: typography.weightBold,
-    lineHeight: typography.leadingTight,
+    lineHeight: Math.round(typography.size4xl * 1.2),
   },
   h2: {
     fontSize: typography.size3xl,
     fontWeight: typography.weightSemibold,
-    lineHeight: typography.leadingTight,
+    lineHeight: Math.round(typography.size3xl * 1.2),
   },
   h3: {
     fontSize: typography.size2xl,
     fontWeight: typography.weightSemibold,
-    lineHeight: typography.leadingTight,
+    lineHeight: Math.round(typography.size2xl * 1.2),
   },
   h4: {
     fontSize: typography.sizeXl,
     fontWeight: typography.weightSemibold,
-    lineHeight: typography.leadingNormal,
+    lineHeight: Math.round(typography.sizeXl * 1.2),
   },
   p: {
     fontSize: typography.sizeBase,
     fontWeight: typography.weightNormal,
-    lineHeight: typography.leadingNormal,
+    lineHeight: typography.leadingRelaxed,
   },
   lead: {
     fontSize: typography.sizeLg,
     fontWeight: typography.weightNormal,
-    lineHeight: typography.leadingRelaxed,
+    lineHeight: Math.round(typography.sizeLg * 1.5),
     color: colors.foregroundMuted,
   },
   small: {

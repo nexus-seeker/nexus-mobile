@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Image } from 'react-native';
 import { Button, Text, Card } from '../components/ui';
 import { useMobileWallet } from '../utils/useMobileWallet';
 import { useAuthorization } from '../utils/useAuthorization';
+import { colors, spacing, radii, typography } from '../theme/shadcn-theme';
 
 interface WalletConnectScreenProps {
     onConnected: () => void;
@@ -55,7 +56,10 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                 <Card style={styles.featureCard}>
                     <Card.Content>
                         <View style={styles.featureRow}>
-                            <Text style={styles.featureIcon}>🤖</Text>
+                            <Image
+                                source={require('../../assets/images/feature_robot.png')}
+                                style={styles.featureImage}
+                            />
                             <View style={styles.featureText}>
                                 <Text variant="h4">Natural Language DeFi</Text>
                                 <Text variant="muted" style={styles.featureDesc}>
@@ -63,8 +67,12 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                                 </Text>
                             </View>
                         </View>
+                        <View style={styles.divider} />
                         <View style={styles.featureRow}>
-                            <Text style={styles.featureIcon}>🔐</Text>
+                            <Image
+                                source={require('../../assets/images/feature_shield.png')}
+                                style={styles.featureImage}
+                            />
                             <View style={styles.featureText}>
                                 <Text variant="h4">On-chain Policy Guard</Text>
                                 <Text variant="muted" style={styles.featureDesc}>
@@ -72,8 +80,12 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                                 </Text>
                             </View>
                         </View>
+                        <View style={styles.divider} />
                         <View style={styles.featureRow}>
-                            <Text style={styles.featureIcon}>📱</Text>
+                            <Image
+                                source={require('../../assets/images/feature_fingerprint.png')}
+                                style={styles.featureImage}
+                            />
                             <View style={styles.featureText}>
                                 <Text variant="h4">Seed Vault Security</Text>
                                 <Text variant="muted" style={styles.featureDesc}>
@@ -112,63 +124,72 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: '#0f172a',
+        backgroundColor: colors.background,
     },
     content: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center',
-        padding: 24,
+        padding: spacing['2xl'],
     },
     header: {
         alignItems: 'center',
-        marginBottom: 32,
+        marginBottom: spacing['3xl'],
     },
     title: {
-        fontWeight: '900',
+        fontWeight: typography.weightBold,
         letterSpacing: 6,
-        color: '#e2e8f0',
+        color: colors.foreground,
     },
     subtitle: {
-        color: '#94a3b8',
-        marginTop: 8,
+        color: colors.foregroundMuted,
+        marginTop: spacing.sm,
     },
     featureCard: {
         width: '100%',
-        borderRadius: 20,
-        backgroundColor: '#1e293b',
-        marginBottom: 32,
+        borderRadius: radii['2xl'],
+        backgroundColor: 'rgba(24, 24, 27, 0.4)',
+        borderColor: colors.border,
+        borderWidth: 1,
+        marginBottom: spacing['3xl'],
     },
     featureRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 12,
-        paddingVertical: 10,
+        alignItems: 'center',
+        gap: spacing.lg,
+        paddingVertical: spacing.md,
     },
-    featureIcon: {
-        fontSize: 24,
-        width: 32,
-        textAlign: 'center',
+    featureImage: {
+        width: 56,
+        height: 56,
+        borderRadius: radii.md,
+        backgroundColor: colors.backgroundTertiary,
+        borderWidth: 1,
+        borderColor: colors.borderStrong,
     },
     featureText: {
         flex: 1,
     },
     featureDesc: {
-        color: '#94a3b8',
+        color: colors.foregroundMuted,
         marginTop: 2,
+        lineHeight: 20,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: colors.border,
     },
     connectButton: {
         width: '100%',
-        borderRadius: 14,
+        borderRadius: radii.xl,
     },
     hint: {
-        color: '#64748b',
-        marginTop: 12,
+        color: colors.foregroundMuted,
+        marginTop: spacing.lg,
         textAlign: 'center',
     },
     errorText: {
-        color: '#ef4444',
-        marginTop: 8,
+        color: colors.error,
+        marginTop: spacing.md,
         textAlign: 'center',
     },
 });

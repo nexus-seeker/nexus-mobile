@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState } from 'react';
 import {
   TextInput,
   StyleSheet,
@@ -15,15 +15,22 @@ interface InputProps extends TextInputProps {
 }
 
 export const Input = forwardRef<TextInput, InputProps>(
-  ({ icon, leftIcon, containerStyle, style, ...props }, ref) => {
+  ({ icon, leftIcon, containerStyle, style, onFocus, onBlur, ...props }, ref) => {
     const iconToUse = leftIcon || icon;
+    const [isFocused, setIsFocused] = useState(false);
     return (
-      <View style={[styles.container, containerStyle]}>
+      <View style={[
+        styles.container,
+        isFocused && styles.containerFocused,
+        containerStyle
+      ]}>
         {iconToUse && <View style={styles.iconContainer}>{iconToUse}</View>}
         <TextInput
           ref={ref}
           style={[styles.input, iconToUse ? styles.inputWithIcon : undefined, style]}
           placeholderTextColor={colors.foregroundSubtle}
+          onFocus={(e) => { setIsFocused(true); onFocus?.(e); }}
+          onBlur={(e) => { setIsFocused(false); onBlur?.(e); }}
           {...props}
         />
       </View>
@@ -37,10 +44,19 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundTertiary,
-    borderRadius: radii.md,
+    backgroundColor: colors.backgroundElevated,
+    borderRadius: radii.full,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  containerFocused: {
+    borderColor: colors.primary,
+    backgroundColor: colors.backgroundSecondary,
   },
   iconContainer: {
     paddingLeft: spacing.md,

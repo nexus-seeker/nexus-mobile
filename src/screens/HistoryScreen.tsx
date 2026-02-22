@@ -1,8 +1,10 @@
 import React from 'react';
-import { FlatList, Linking, StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
+import { FlatList, Linking, StyleSheet, View, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Text } from '../components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthorization } from '../utils/useAuthorization';
 import { fetchReceipts, type ReceiptDto } from '../services/agent/agent-api';
@@ -74,12 +76,10 @@ function ReceiptCard({ receipt }: { receipt: ReceiptDto }) {
   };
 
   return (
-    <View style={styles.receiptCard}>
-      <LinearGradient
-        colors={[colors.backgroundElevated, colors.backgroundTertiary]}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.receiptBorder} />
+    <View style={[
+      styles.receiptCard,
+      { borderColor: isSuccess ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)' }
+    ]}>
 
       <View style={styles.receiptContent}>
         {/* Header */}
@@ -142,15 +142,12 @@ function ReceiptCard({ receipt }: { receipt: ReceiptDto }) {
 function EmptyState() {
   return (
     <View style={styles.emptyContainer}>
-      <LinearGradient
-        colors={colors.gradientSurface}
-        style={styles.emptyIconContainer}
-      >
-        <MaterialCommunityIcons name="receipt" size={48} color={colors.primaryLight} />
-      </LinearGradient>
-      <Text style={styles.emptyTitle}>No receipts yet</Text>
+      <View style={styles.emptyOrb}>
+        <MaterialCommunityIcons name="receipt" size={36} color={colors.primaryLight} />
+      </View>
+      <Text style={styles.emptyTitle}>No transactions yet.</Text>
       <Text style={styles.emptySubtitle}>
-        Your transaction history will appear here after agent actions are executed.
+        Your first intent is waiting to be executed.
       </Text>
     </View>
   );
@@ -159,6 +156,8 @@ function EmptyState() {
 export function HistoryScreen() {
   const { selectedAccount } = useAuthorization();
   const pubkey = selectedAccount?.publicKey.toBase58();
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
 
   const {
     data: receipts,
@@ -215,11 +214,16 @@ export function HistoryScreen() {
     <View style={styles.screen}>
       {/* Header */}
       <LinearGradient
-        colors={colors.gradientPrimary}
+        colors={[colors.primaryMuted, 'transparent']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={styles.header}
+        end={{ x: 0, y: 1 }}
+        style={[styles.header, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 20 : 0) + spacing.md }]}
       >
+        <View style={styles.headerTop}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
+            <MaterialCommunityIcons name="close" size={24} color={colors.foreground} />
+          </Pressable>
+        </View>
         <View style={styles.headerContent}>
           <MaterialCommunityIcons name="history" size={32} color={colors.foreground} />
           <Text style={styles.headerTitle}>Transaction History</Text>
@@ -248,11 +252,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
-    borderBottomLeftRadius: radii['2xl'],
-    borderBottomRightRadius: radii['2xl'],
+  },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: spacing.xs,
+  },
+  closeButton: {
+    padding: spacing.xs,
   },
   headerContent: {
     alignItems: 'center',
@@ -276,15 +285,8 @@ const styles = StyleSheet.create({
   receiptCard: {
     borderRadius: radii.xl,
     overflow: 'hidden',
-    ...shadows.md,
-  },
-  receiptBorder: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: colors.border,
+    backgroundColor: 'rgba(24, 24, 27, 0.4)',
+    borderWidth: 1,
   },
   receiptContent: {
     padding: spacing.lg,
@@ -345,11 +347,14 @@ const styles = StyleSheet.create({
     fontWeight: typography.weightBold,
     color: colors.foreground,
     fontFamily: typography.fontMono,
+    includeFontPadding: false,
+    lineHeight: 34,
   },
   amountLabel: {
     fontSize: typography.sizeLg,
     color: colors.foregroundMuted,
     marginLeft: spacing.xs,
+    includeFontPadding: false,
   },
   receiptFooter: {
     flexDirection: 'row',
@@ -453,15 +458,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing['4xl'],
     paddingHorizontal: spacing.xl,
   },
-  emptyIconContainer: {
+  emptyOrb: {
     width: 80,
     height: 80,
-    borderRadius: radii['2xl'],
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    backgroundColor: colors.primaryMuted,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.primaryLight,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 8,
+    marginBottom: spacing.lg,
   },
   emptyTitle: {
     fontSize: typography.sizeXl,

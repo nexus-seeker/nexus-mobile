@@ -36,10 +36,15 @@ Card.Footer = function CardFooter({ style, children, ...props }: ViewProps) {
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.backgroundSecondary,
-    borderRadius: radii.lg,
+    backgroundColor: 'rgba(24, 24, 27, 0.4)', // transparent backgroundElevated (zinc-900ish)
+    borderRadius: radii['2xl'],
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 4,
   },
   default: {},
   outline: {

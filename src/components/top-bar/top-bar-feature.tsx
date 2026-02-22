@@ -14,7 +14,7 @@ export function TopBar() {
         variant="ghost"
         size="sm"
         onPress={() => {
-          navigation.navigate("HomeTabs");
+          navigation.navigate("Chat");
         }}
       >
         Settings

@@ -9,15 +9,22 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthorization } from '../utils/useAuthorization';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { type RootStackParamList } from '../navigators/AppNavigator';
 import { useAgentRun } from '../hooks/useAgentRun';
 import { StepCard } from '../components/StepCard';
 import { ApprovalSheet } from '../components/ApprovalSheet';
 import { Button, Card, Input, Text } from '../components/ui';
 import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
 
-const EXAMPLE_INTENT = 'Swap 0.1 SOL to USDC';
+const SUGGESTIONS = [
+  'Swap 0.1 SOL to USDC',
+  'Send 0.05 SOL to alice.skr',
+  'Stake 2 SOL on Marginfi',
+];
 
 // Status Indicator
 function StatusIndicator({ status }: { status: string }) {
@@ -49,7 +56,8 @@ function StatusIndicator({ status }: { status: string }) {
 
 export function ChatScreen() {
   const { selectedAccount, authorizeSession } = useAuthorization();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
   const [intent, setIntent] = useState('');
   const [isApprovalSheetVisible, setIsApprovalSheetVisible] = useState(false);
   const {
@@ -65,7 +73,7 @@ export function ChatScreen() {
 
   const pubkey = selectedAccount?.publicKey.toBase58();
   const shortPubkey = pubkey
-    ? `${pubkey.slice(0, 6)}...${pubkey.slice(-4)}`
+    ? `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}.skr`
     : 'Not connected';
 
   async function handleSend() {
@@ -108,25 +116,41 @@ export function ChatScreen() {
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={styles.screen}
     >
       {/* Header - solid background */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 20 : 0) + spacing.md }]}>
         <View style={styles.headerContent}>
+
+          {/* Left: Avatar/Profile */}
+          <Pressable
+            style={styles.walletChip}
+            onPress={() => navigation.navigate("Profile")}
+          >
+            <View style={[styles.statusDot, { backgroundColor: selectedAccount ? colors.success : colors.error }]} />
+            <Text style={styles.walletChipText}>{shortPubkey}</Text>
+          </Pressable>
+
+          {/* Center: NEXUS Brand */}
           <View style={styles.headerTitleContainer}>
             <MaterialCommunityIcons
               name="hexagon-multiple"
-              size={24}
-              color={colors.foreground}
+              size={20}
+              color={colors.primaryLight}
               style={{ marginRight: spacing.sm }}
             />
-            <Text variant="h4">NEXUS</Text>
+            <Text variant="h4" style={{ letterSpacing: 2 }}>NEXUS</Text>
           </View>
-          <View style={styles.walletChip}>
-            <View style={[styles.statusDot, { backgroundColor: selectedAccount ? colors.success : colors.error }]} />
-            <Text style={styles.walletChipText}>{shortPubkey}</Text>
-          </View>
+
+          {/* Right: Policy Shield */}
+          <Pressable
+            style={styles.iconButton}
+            onPress={() => navigation.navigate("Policy")}
+          >
+            <MaterialCommunityIcons name="shield-check" size={24} color={colors.foreground} />
+          </Pressable>
+
         </View>
       </View>
 
@@ -233,45 +257,77 @@ export function ChatScreen() {
         {/* Empty State */}
         {steps.length === 0 && runState === 'idle' && (
           <View style={styles.emptyState}>
-            <View style={styles.emptyStateIconContainer}>
-              <MaterialCommunityIcons name="brain" size={48} color={colors.primaryLight} />
+            <View style={styles.emptyStateOrb}>
+              <MaterialCommunityIcons name="brain" size={40} color={colors.primaryLight} />
             </View>
-            <Text variant="h4">Ready for your intent</Text>
-            <Text variant="muted" style={{ marginTop: spacing.xs }}>
-              Tell NEXUS what you want to do
+            <Text variant="h3" style={{ textAlign: 'center', marginTop: spacing.lg }}>NEXUS is ready.</Text>
+            <Text variant="muted" style={{ marginTop: spacing.sm, textAlign: 'center' }}>
+              Speak your intent clearly and we'll execute it on-chain.
             </Text>
-            <Pressable onPress={() => setIntent(EXAMPLE_INTENT)} style={styles.exampleChip}>
-              <Text style={styles.exampleChipText}>Try: "{EXAMPLE_INTENT}"</Text>
-            </Pressable>
           </View>
         )}
       </ScrollView>
 
+      {/* Receive Pill */}
+      {pubkey && (
+        <Pressable
+          style={[styles.floatingPill, { bottom: (Platform.OS === 'ios' ? 140 : 120) + insets.bottom }]}
+          onPress={() => navigation.navigate("History")}
+        >
+          <MaterialCommunityIcons name="history" size={16} color={colors.foreground} />
+          <Text style={styles.floatingPillText}>Receipts</Text>
+        </Pressable>
+      )}
+
+      {/* Suggestion Chips */}
+      {steps.length === 0 && runState === 'idle' && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.suggestionsWrapper}
+          contentContainerStyle={styles.suggestionsContainer}
+        >
+          {SUGGESTIONS.map((item, idx) => (
+            <Pressable key={idx} onPress={() => setIntent(item)} style={styles.suggestionChip}>
+              <Text style={styles.suggestionText}>{item}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+
       {/* Input Area */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: (Platform.OS === 'ios' ? 10 : spacing.lg) + insets.bottom }]}>
         <View style={styles.inputRow}>
           <Input
             placeholder="Type your intent..."
             value={intent}
             onChangeText={setIntent}
-            style={styles.input}
+            containerStyle={styles.input}
             editable={!isRunning && !isSigning}
             onSubmitEditing={handleSend}
+            leftIcon={<MaterialCommunityIcons name="microphone" size={20} color={colors.foregroundMuted} />}
           />
           <Pressable
             onPress={handleSend}
             disabled={isRunning || isSigning || !intent.trim()}
             style={({ pressed }) => [
-              styles.sendButton,
+              styles.sendButtonWrapper,
               pressed && styles.sendButtonPressed,
               (isRunning || isSigning || !intent.trim()) && styles.sendButtonDisabled,
             ]}
           >
-            {isRunning ? (
-              <ActivityIndicator size="small" color={colors.foreground} />
-            ) : (
-              <MaterialCommunityIcons name="send" size={18} color={colors.foreground} />
-            )}
+            <LinearGradient
+              colors={[colors.primaryLight, colors.primaryDark]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.sendButtonGradient}
+            >
+              {isRunning ? (
+                <ActivityIndicator size="small" color={colors.foregroundInverse} />
+              ) : (
+                <MaterialCommunityIcons name="send" size={20} color={colors.foregroundInverse} style={styles.sendIcon} />
+              )}
+            </LinearGradient>
           </Pressable>
         </View>
       </View>
@@ -297,7 +353,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     backgroundColor: colors.background,
@@ -313,19 +368,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  iconButton: {
+    padding: spacing.xs,
+  },
   walletChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: colors.backgroundTertiary,
     borderRadius: radii.full,
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.glassBorder,
+    borderColor: colors.border,
   },
   walletChipText: {
     color: colors.foreground,
-    fontSize: typography.sizeSm,
+    fontSize: typography.sizeXs,
     fontFamily: typography.fontMono,
     marginLeft: spacing.xs,
   },
@@ -428,33 +486,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing['4xl'],
   },
-  emptyStateIconContainer: {
+  emptyStateOrb: {
     width: 80,
     height: 80,
-    borderRadius: radii['2xl'],
+    borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.primaryMuted,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.primaryLight,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 8,
   },
-  exampleChip: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.backgroundTertiary,
+  suggestionsWrapper: {
+    maxHeight: 50,
+    marginBottom: spacing.md,
+  },
+  suggestionsContainer: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  suggestionChip: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: radii.full,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+    justifyContent: 'center',
   },
-  exampleChipText: {
-    color: colors.primaryLight,
+  suggestionText: {
+    color: colors.foregroundMuted,
     fontSize: typography.sizeSm,
   },
   inputContainer: {
     padding: spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 30 : spacing.lg,
+    paddingTop: spacing.sm,
   },
   inputRow: {
     flexDirection: 'row',
@@ -463,20 +533,56 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
   },
-  sendButton: {
+  sendButtonWrapper: {
+    marginLeft: spacing.sm,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 6,
+    borderRadius: radii.full,
+  },
+  sendButtonGradient: {
     width: 48,
     height: 48,
-    borderRadius: radii.lg,
-    marginLeft: spacing.sm,
+    borderRadius: radii.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.foreground,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  sendIcon: {
+    marginLeft: 3,
+    marginBottom: 2,
+    transform: [{ rotate: '-45deg' }],
   },
   sendButtonPressed: {
     opacity: 0.8,
   },
   sendButtonDisabled: {
     opacity: 0.5,
+  },
+  floatingPill: {
+    position: 'absolute',
+    right: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.backgroundElevated,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  floatingPillText: {
+    color: colors.foreground,
+    fontSize: typography.sizeXs,
+    fontWeight: typography.weightMedium,
   },
 });

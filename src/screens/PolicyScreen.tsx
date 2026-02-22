@@ -1,6 +1,8 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { ScrollView, StyleSheet, View, Switch, ActivityIndicator } from "react-native";
+import { ScrollView, StyleSheet, View, Switch, ActivityIndicator, Pressable, Platform } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { usePolicy } from "../contexts/PolicyContext";
 import { type PolicyProtocol } from "../features/policy/policy-engine";
 import { Button, Card, Input, Text } from "../components/ui";
@@ -79,6 +81,8 @@ export function PolicyScreen() {
     savePolicy,
     clearPolicyError,
   } = usePolicy();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const [dailyLimitSol, setDailyLimitSol] = useState(String(policy.dailyLimitSol));
   const [allowedJupiter, setAllowedJupiter] = useState(
@@ -153,9 +157,14 @@ export function PolicyScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.screen}>
+    <ScrollView contentContainerStyle={[styles.screen, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 20 : 0) + spacing.md }]}>
       {/* Header - solid */}
       <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
+            <MaterialCommunityIcons name="close" size={24} color={colors.foreground} />
+          </Pressable>
+        </View>
         <View style={styles.headerContent}>
           <MaterialCommunityIcons name="shield" size={28} color={colors.foreground} />
           <Text variant="h3" style={{ marginTop: spacing.sm }}>Permission Vault</Text>
@@ -314,6 +323,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: spacing.xs,
+  },
+  closeButton: {
+    padding: spacing.xs,
+  },
   headerContent: {
     alignItems: "center",
   },
@@ -326,6 +343,12 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     alignItems: "center",
     borderWidth: 1,
+    backgroundColor: 'rgba(24, 24, 27, 0.4)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   statValue: {
     fontSize: typography.sizeLg,
@@ -341,6 +364,7 @@ const styles = StyleSheet.create({
   policyCard: {
     padding: spacing.xl,
     gap: spacing.lg,
+    backgroundColor: 'rgba(24, 24, 27, 0.4)',
   },
   inputGroup: {
     gap: spacing.sm,

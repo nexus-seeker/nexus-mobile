@@ -7,23 +7,35 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { HomeNavigator } from "./HomeNavigator";
 import { WalletConnectScreen } from "../screens/WalletConnectScreen";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
 
+import {
+  ChatScreen,
+  PolicyScreen,
+  ProfileScreen,
+  HistoryScreen,
+} from "../screens";
+
 /**
  * Navigation flow:
- *   WalletConnect → Onboarding (auto-checks status) → HomeTabs
+ *   WalletConnect → Onboarding (auto-checks status) → Chat (Main Screen)
  *
  * The Onboarding screen handles the wallet setup gate — if the wallet is
  * already initialized it passes through instantly; if not, it presents
  * the explicit Set Up Wallet UI before unlocking the app.
+ *
+ * Secondary screens (Policy, Profile, History) are presented as native modals
+ * floating over the main Chat screen.
  */
 
-type RootStackParamList = {
+export type RootStackParamList = {
   WalletConnect: undefined;
   Onboarding: undefined;
-  HomeTabs: undefined;
+  Chat: undefined;
+  Policy: undefined;
+  Profile: undefined;
+  History: undefined;
 };
 
 declare global {
@@ -53,17 +65,24 @@ const AppStack = () => {
       >
         {(props) => (
           <OnboardingScreen
-            onComplete={() => props.navigation.replace("HomeTabs")}
+            onComplete={() => props.navigation.replace("Chat")}
           />
         )}
       </Stack.Screen>
 
-      {/* Step 3: main app */}
+      {/* Step 3: pure agent UX - Chat is the root */}
       <Stack.Screen
-        name="HomeTabs"
-        component={HomeNavigator}
-        options={{ headerShown: false }}
+        name="Chat"
+        component={ChatScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
+
+      {/* Step 4: modal slide-ups */}
+      <Stack.Group screenOptions={{ presentation: "modal", headerShown: false }}>
+        <Stack.Screen name="Policy" component={PolicyScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="History" component={HistoryScreen} />
+      </Stack.Group>
     </Stack.Navigator>
   );
 };

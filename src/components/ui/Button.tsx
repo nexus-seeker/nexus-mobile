@@ -5,11 +5,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   View,
+  Animated,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
 import { colors, radii, spacing, typography } from '../../theme/shadcn-theme';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface ButtonProps extends PressableProps {
   variant?: 'default' | 'secondary' | 'outline' | 'ghost' | 'destructive';
@@ -43,14 +46,42 @@ export function Button({
     styles[`${size}Text`],
   ];
 
+  const scale = React.useRef(new Animated.Value(1)).current;
+  const [isPressed, setIsPressed] = React.useState(false);
+
+  const handlePressIn = (e: any) => {
+    if (disabled || loading) return;
+    setIsPressed(true);
+    Animated.spring(scale, {
+      toValue: 0.95,
+      useNativeDriver: true,
+      speed: 20,
+    }).start();
+    props.onPressIn?.(e);
+  };
+
+  const handlePressOut = (e: any) => {
+    if (disabled || loading) return;
+    setIsPressed(false);
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 20,
+    }).start();
+    props.onPressOut?.(e);
+  };
+
   return (
-    <Pressable
-      style={({ pressed }) => [
+    <AnimatedPressable
+      style={[
         buttonStyles,
-        pressed && !disabled && !loading && styles.pressed,
+        isPressed && !disabled && !loading && styles.pressed,
         style,
+        { transform: [{ scale }] }
       ]}
       disabled={disabled || loading}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       {...props}
     >
       {loading ? (
@@ -64,13 +95,13 @@ export function Button({
           <Text style={textStyles}>{children}</Text>
         </View>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radii.md,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -96,20 +127,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   destructive: {
-    backgroundColor: colors.error,
+    backgroundColor: colors.errorMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)', // muted red border
   },
   // Sizes
   sm: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
   },
   md: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
+    borderRadius: radii.lg,
   },
   lg: {
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.xl,
+    borderRadius: radii.xl,
   },
   // States
   disabled: {
@@ -137,7 +173,7 @@ const styles = StyleSheet.create({
     color: colors.foreground,
   },
   destructiveText: {
-    color: colors.foreground,
+    color: colors.error,
   },
   // Text sizes
   smText: {

@@ -3,6 +3,7 @@ import {
     StyleSheet,
     View,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Button, Card, Text } from '../components/ui';
@@ -146,7 +147,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.iconContainer}>
-                    <MaterialCommunityIcons name="shield-account" size={48} color={colors.primary} />
+                    <Image source={require('../../assets/images/onboarding_nexus_shield.png')} style={styles.shieldImage} />
                 </View>
                 <Text variant="h3" style={styles.title}>One-Time Setup</Text>
                 <Text variant="muted" style={styles.subtitle}>
@@ -158,13 +159,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             {/* What this does */}
             <Card style={styles.infoCard}>
                 <StepRow
-                    icon="account-plus"
+                    imageSource={require('../../assets/images/onboarding_agent_profile.png')}
                     title="Agent Profile"
                     description="Registers your wallet with the NEXUS on-chain program"
                 />
                 <View style={styles.divider} />
                 <StepRow
-                    icon="shield-check"
+                    imageSource={require('../../assets/images/onboarding_policy_vault.png')}
                     title="Policy Vault"
                     description="Sets your spending limits (1 SOL/day · Jupiter + Transfers)"
                 />
@@ -198,11 +199,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
 // ─── Sub-component ────────────────────────────────────────────────
 
-function StepRow({ icon, title, description }: { icon: string; title: string; description: string }) {
+function StepRow({ imageSource, title, description }: { imageSource: any; title: string; description: string }) {
     return (
         <View style={styles.stepRow}>
             <View style={styles.stepIcon}>
-                <MaterialCommunityIcons name={icon as any} size={20} color={colors.primary} />
+                <Image source={imageSource} style={styles.stepImage} />
             </View>
             <View style={styles.stepText}>
                 <Text style={styles.stepTitle}>{title}</Text>
@@ -236,13 +237,23 @@ const styles = StyleSheet.create({
     iconContainer: {
         width: 88,
         height: 88,
-        borderRadius: radii['2xl'],
-        backgroundColor: colors.backgroundSecondary,
+        borderRadius: radii.full,
+        backgroundColor: colors.primaryMuted,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: colors.primaryLight,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.sm,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 8,
+        overflow: 'hidden',
+    },
+    shieldImage: {
+        width: '100%',
+        height: '100%',
     },
     title: {
         textAlign: 'center',
@@ -253,8 +264,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: spacing.md,
     },
     infoCard: {
-        padding: spacing.lg,
-        gap: spacing.md,
+        padding: spacing.xl,
+        gap: spacing.lg,
+        backgroundColor: 'rgba(24, 24, 27, 0.4)',
+        borderColor: colors.border,
+        borderWidth: 1,
+        borderRadius: radii['2xl'],
     },
     stepRow: {
         flexDirection: 'row',
@@ -262,15 +277,20 @@ const styles = StyleSheet.create({
         gap: spacing.md,
     },
     stepIcon: {
-        width: 40,
-        height: 40,
+        width: 48,
+        height: 48,
         borderRadius: radii.md,
         backgroundColor: colors.backgroundTertiary,
         borderWidth: 1,
-        borderColor: colors.border,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
         flexShrink: 0,
+        overflow: 'hidden',
+    },
+    stepImage: {
+        width: 48,
+        height: 48,
     },
     stepText: {
         flex: 1,

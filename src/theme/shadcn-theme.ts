@@ -4,52 +4,52 @@
 import { FONT_FAMILY } from './fonts';
 
 export const colors = {
-  // Background layers - true zinc dark
-  background: '#09090b',         // zinc-950
-  backgroundSecondary: '#18181b', // zinc-900
-  backgroundTertiary: '#27272a',  // zinc-800
-  backgroundElevated: '#3f3f46',  // zinc-700
+  // Background layers - deep black / fintech void
+  background: '#000000',
+  backgroundSecondary: '#09090b', // zinc-950
+  backgroundTertiary: '#121214',
+  backgroundElevated: '#18181b',  // zinc-900
 
   // Foreground (text)
   foreground: '#fafafa',
   foregroundMuted: '#a1a1aa',
   foregroundSubtle: '#71717a',
-  foregroundInverse: '#18181b',
+  foregroundInverse: '#000000',
 
   // Border
   border: 'rgba(255, 255, 255, 0.08)',
   borderStrong: 'rgba(255, 255, 255, 0.15)',
-  borderFocus: '#8b5cf6',
+  borderFocus: '#a855f7', // solana purple
 
   // Accent colors
-  primary: '#8b5cf6',
-  primaryLight: '#a78bfa',
-  primaryDark: '#7c3aed',
-  primaryMuted: 'rgba(139, 92, 246, 0.15)',
+  primary: '#a855f7',
+  primaryLight: '#d8b4fe',
+  primaryDark: '#7e22ce',
+  primaryMuted: 'rgba(168, 85, 247, 0.15)',
 
   secondary: '#06b6d4',
   secondaryMuted: 'rgba(6, 182, 212, 0.15)',
 
   // Semantic colors
-  success: '#22c55e',
-  successMuted: 'rgba(34, 197, 94, 0.15)',
+  success: '#10b981', // emerald
+  successMuted: 'rgba(16, 185, 129, 0.15)',
 
-  error: '#ef4444',
-  errorMuted: 'rgba(239, 68, 68, 0.15)',
+  error: '#f43f5e', // rose
+  errorMuted: 'rgba(244, 63, 94, 0.15)',
 
   warning: '#f59e0b',
   warningMuted: 'rgba(245, 158, 11, 0.15)',
 
   // Additional tokens
-  accent: '#f59e0b',
-  accentMuted: 'rgba(245, 158, 11, 0.15)',
+  accent: '#a855f7',
+  accentMuted: 'rgba(168, 85, 247, 0.15)',
   glassBorder: 'rgba(255, 255, 255, 0.1)',
 
   // Gradients - use sparingly
-  gradientPrimary: ['#8b5cf6', '#06b6d4'] as const,
-  gradientSuccess: ['#22c55e', '#06b6d4'] as const,
-  gradientError: ['#ef4444', '#f59e0b'] as const,
-  gradientSurface: ['rgba(139, 92, 246, 0.1)', 'rgba(6, 182, 212, 0.05)'] as const,
+  gradientPrimary: ['#a855f7', '#06b6d4'] as const,
+  gradientSuccess: ['#10b981', '#06b6d4'] as const,
+  gradientError: ['#f43f5e', '#f59e0b'] as const,
+  gradientSurface: ['rgba(168, 85, 247, 0.1)', 'rgba(6, 182, 212, 0.05)'] as const,
 };
 
 // Font weights as const for type safety
@@ -65,14 +65,14 @@ export const typography = {
   fontMono: FONT_FAMILY.mono,
 
   // Font sizes
-  sizeXs: 11,
+  sizeXs: 12,
   sizeSm: 13,
-  sizeBase: 15,
+  sizeBase: 16,
   sizeLg: 17,
   sizeXl: 19,
-  size2xl: 23,
+  size2xl: 24,
   size3xl: 28,
-  size4xl: 34,
+  size4xl: 32,
 
   // Font weights
   weightNormal: '400' as const,
@@ -95,14 +95,15 @@ export const spacing = {
   '2xl': 24,
   '3xl': 32,
   '4xl': 40,
+  '5xl': 48,
 };
 
 export const radii = {
-  sm: 6,
-  md: 8,
-  lg: 10,
-  xl: 12,
-  '2xl': 16,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  '2xl': 24,
   full: 9999,
 };
 
