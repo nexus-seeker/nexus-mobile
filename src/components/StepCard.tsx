@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Text } from './ui';
 import type { StepEvent } from '../services/agent/agent-api';
 
 interface StepCardProps {

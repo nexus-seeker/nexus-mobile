@@ -6,18 +6,12 @@ import {
   useRequestAirdrop,
   useTransferSol,
 } from "./account-data-access";
-import { View, StyleSheet, ScrollView } from "react-native";
-import {
-  Text,
-  useTheme,
-  Button,
-  ActivityIndicator,
-  DataTable,
-  TextInput,
-} from "react-native-paper";
+import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { Text, Button, Input } from "../ui";
 import { useState, useMemo } from "react";
 import { ellipsify } from "../../utils/ellipsify";
 import { AppModal } from "../ui/app-modal";
+import { colors, spacing } from "../../theme/shadcn-theme";
 
 function lamportsToSol(balance: number) {
   return Math.round((balance / LAMPORTS_PER_SOL) * 100000) / 100000;
@@ -28,8 +22,8 @@ export function AccountBalance({ address }: { address: PublicKey }) {
   return (
     <>
       <View style={styles.accountBalance}>
-        <Text variant="titleMedium">Current Balance</Text>
-        <Text variant="displayLarge">
+        <Text variant="h4">Current Balance</Text>
+        <Text variant="h2">
           {query.data ? lamportsToSol(query.data) : "..."} SOL
         </Text>
       </View>
@@ -62,7 +56,6 @@ export function AccountButtonGroup({ address }: { address: PublicKey }) {
           address={address}
         />
         <Button
-          mode="contained"
           disabled={requestAirdrop.isPending}
           onPress={() => {
             setShowAirdropModal(true);
@@ -71,14 +64,12 @@ export function AccountButtonGroup({ address }: { address: PublicKey }) {
           Airdrop
         </Button>
         <Button
-          mode="contained"
           onPress={() => setShowSendModal(true)}
           style={{ marginLeft: 6 }}
         >
           Send
         </Button>
         <Button
-          mode="contained"
           onPress={() => setShowReceiveModal(true)}
           style={{ marginLeft: 6 }}
         >
@@ -112,7 +103,7 @@ export function AirdropRequestModal({
       submitDisabled={requestAirdrop.isPending}
     >
       <View style={{ padding: 4 }}>
-        <Text>
+        <Text variant="p">
           Request an airdrop of 1 SOL to your connected wallet account.
         </Text>
       </View>
@@ -149,19 +140,17 @@ export function TransferSolModal({
       submitDisabled={!destinationAddress || !amount}
     >
       <View style={{ padding: 20 }}>
-        <TextInput
-          label="Amount (SOL)"
+        <Input
+          placeholder="Amount (SOL)"
           value={amount}
           onChangeText={setAmount}
           keyboardType="numeric"
-          mode="outlined"
           style={{ marginBottom: 20 }}
         />
-        <TextInput
-          label="Destination Address"
+        <Input
+          placeholder="Destination Address"
           value={destinationAddress}
           onChangeText={setDestinationAddress}
-          mode="outlined"
         />
       </View>
     </AppModal>
@@ -180,9 +169,9 @@ export function ReceiveSolModal({
   return (
     <AppModal title="Receive assets" hide={hide} show={show}>
       <View style={{ padding: 4 }}>
-        <Text selectable={true} variant="bodyMedium">
+        <Text variant="p">
           You can receive assets by sending them to your public key:{"\n\n"}
-          <Text variant="bodyLarge">{address.toBase58()}</Text>
+          <Text variant="h4" style={{ fontFamily: 'monospace' }}>{address.toBase58()}</Text>
         </Text>
       </View>
     </AppModal>
@@ -192,8 +181,7 @@ export function ReceiveSolModal({
 export function AccountTokens({ address }: { address: PublicKey }) {
   let query = useGetTokenAccounts({ address });
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 3; // Items per page
-  const theme = useTheme();
+  const itemsPerPage = 3;
 
   const items = useMemo(() => {
     const start = currentPage * itemsPerPage;
@@ -201,74 +189,77 @@ export function AccountTokens({ address }: { address: PublicKey }) {
     return query.data?.slice(start, end) ?? [];
   }, [query.data, currentPage, itemsPerPage]);
 
-  // Calculate the total number of pages
   const numberOfPages = useMemo(() => {
     return Math.ceil((query.data?.length ?? 0) / itemsPerPage);
   }, [query.data, itemsPerPage]);
 
   return (
     <>
-      <Text
-        variant="titleMedium"
-        style={{
-          color: theme.colors.onSurfaceVariant,
-        }}
-      >
+      <Text variant="h4" style={{ color: colors.foregroundMuted }}>
         Token Accounts
       </Text>
       <ScrollView>
-        {query.isLoading && <ActivityIndicator animating={true} />}
+        {query.isLoading && <ActivityIndicator animating={true} color={colors.primary} />}
         {query.isError && (
-          <Text
-            style={{
-              padding: 8,
-              backgroundColor: theme.colors.errorContainer,
-              color: theme.colors.error,
-            }}
-          >
-            Error: {query.error?.message.toString()}
-          </Text>
+          <View style={styles.errorContainer}>
+            <Text variant="p" style={styles.errorText}>
+              Error: {query.error?.message.toString()}
+            </Text>
+          </View>
         )}
         {query.isSuccess && (
           <>
-            <DataTable>
-              <DataTable.Header>
-                <DataTable.Title>Public Key</DataTable.Title>
-                <DataTable.Title>Mint</DataTable.Title>
-                <DataTable.Title numeric>Balance</DataTable.Title>
-              </DataTable.Header>
+            <View style={styles.table}>
+              <View style={styles.tableHeader}>
+                <Text variant="small" style={styles.tableHeaderCell}>Public Key</Text>
+                <Text variant="small" style={styles.tableHeaderCell}>Mint</Text>
+                <Text variant="small" style={[styles.tableHeaderCell, styles.numeric]}>Balance</Text>
+              </View>
 
               {query.data.length === 0 && (
                 <View style={{ marginTop: 12 }}>
-                  <Text variant="bodyMedium">No token accounts found.</Text>
+                  <Text variant="p">No token accounts found.</Text>
                 </View>
               )}
 
               {items?.map(({ account, pubkey }) => (
-                <DataTable.Row key={pubkey.toString()}>
-                  <DataTable.Cell>
+                <View key={pubkey.toString()} style={styles.tableRow}>
+                  <Text variant="small" style={styles.tableCell}>
                     {ellipsify(pubkey.toString())}
-                  </DataTable.Cell>
-                  <DataTable.Cell>
+                  </Text>
+                  <Text variant="small" style={styles.tableCell}>
                     {ellipsify(account.data.parsed.info.mint)}
-                  </DataTable.Cell>
-                  <DataTable.Cell numeric>
+                  </Text>
+                  <Text variant="small" style={[styles.tableCell, styles.numeric]}>
                     <AccountTokenBalance address={pubkey} />
-                  </DataTable.Cell>
-                </DataTable.Row>
+                  </Text>
+                </View>
               ))}
 
               {(query.data?.length ?? 0) > 3 && (
-                <DataTable.Pagination
-                  page={currentPage}
-                  numberOfPages={numberOfPages}
-                  onPageChange={(page) => setCurrentPage(page)}
-                  label={`${currentPage + 1} of ${numberOfPages}`}
-                  numberOfItemsPerPage={itemsPerPage}
-                  selectPageDropdownLabel={"Rows per page"}
-                />
+                <View style={styles.pagination}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                    disabled={currentPage === 0}
+                  >
+                    Prev
+                  </Button>
+                  <Text variant="small">
+                    {currentPage + 1} of {numberOfPages}
+                  </Text>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => setCurrentPage(Math.min(numberOfPages - 1, currentPage + 1))}
+                    disabled={currentPage === numberOfPages - 1}
+                  >
+                    Next
+                  </Button>
+                </View>
               )}
-            </DataTable>
+            </View>
           </>
         )}
       </ScrollView>
@@ -279,11 +270,11 @@ export function AccountTokens({ address }: { address: PublicKey }) {
 export function AccountTokenBalance({ address }: { address: PublicKey }) {
   const query = useGetTokenAccountBalance({ address });
   return query.isLoading ? (
-    <ActivityIndicator animating={true} />
+    <ActivityIndicator animating={true} size="small" color={colors.primary} />
   ) : query.data ? (
-    <Text>{query.data?.value.uiAmount}</Text>
+    <Text variant="small">{query.data?.value.uiAmount}</Text>
   ) : (
-    <Text>Error</Text>
+    <Text variant="small">Error</Text>
   );
 }
 
@@ -295,8 +286,45 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     flexDirection: "row",
   },
-  error: {
-    color: "red",
+  errorContainer: {
     padding: 8,
+    backgroundColor: colors.errorMuted,
+    borderRadius: 8,
+  },
+  errorText: {
+    color: colors.error,
+  },
+  table: {
+    marginTop: spacing.sm,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tableHeaderCell: {
+    flex: 1,
+    fontWeight: '600',
+    color: colors.foregroundMuted,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tableCell: {
+    flex: 1,
+  },
+  numeric: {
+    textAlign: 'right',
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
   },
 });

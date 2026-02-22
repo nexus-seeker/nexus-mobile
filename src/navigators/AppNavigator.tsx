@@ -13,11 +13,6 @@ import { useColorScheme } from "react-native";
 import { HomeNavigator } from "./HomeNavigator";
 import { WalletConnectScreen } from "../screens/WalletConnectScreen";
 import { StatusBar } from "expo-status-bar";
-import {
-  MD3DarkTheme,
-  MD3LightTheme,
-  adaptNavigationTheme,
-} from "react-native-paper";
 
 /**
  * This type allows TypeScript to know what routes are defined in this navigator
@@ -72,31 +67,11 @@ export interface NavigationProps
 
 export const AppNavigator = (props: NavigationProps) => {
   const colorScheme = useColorScheme();
-  const { LightTheme, DarkTheme } = adaptNavigationTheme({
-    reactNavigationLight: NavigationDefaultTheme,
-    reactNavigationDark: NavigationDarkTheme,
-  });
-
-  const CombinedDefaultTheme = {
-    ...MD3LightTheme,
-    ...LightTheme,
-    colors: {
-      ...MD3LightTheme.colors,
-      ...LightTheme.colors,
-    },
-  };
-  const CombinedDarkTheme = {
-    ...MD3DarkTheme,
-    ...DarkTheme,
-    colors: {
-      ...MD3DarkTheme.colors,
-      ...DarkTheme.colors,
-    },
-  };
+  const theme = colorScheme === "dark" ? NavigationDarkTheme : NavigationDefaultTheme;
 
   return (
     <NavigationContainer
-      theme={colorScheme === "dark" ? CombinedDarkTheme : CombinedDefaultTheme}
+      theme={theme}
       {...props}
     >
       <StatusBar />

@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, type ViewStyle } from 'react-native';
 import { colors } from '../../theme/shadcn-theme';
 
 interface SeparatorProps {
   orientation?: 'horizontal' | 'vertical';
+  style?: ViewStyle;
 }
 
-export function Separator({ orientation = 'horizontal' }: SeparatorProps) {
-  return <View style={[styles.base, styles[orientation]]} />;
+export function Separator({ orientation = 'horizontal', style }: SeparatorProps) {
+  return <View style={[styles.base, styles[orientation], style]} />;
 }
 
 const styles = StyleSheet.create({

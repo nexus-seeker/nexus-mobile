@@ -1,19 +1,31 @@
-import { View, StyleSheet } from "react-native";
-import { List, RadioButton, Text } from "react-native-paper";
+import { View, StyleSheet, Pressable } from "react-native";
+import { Text } from "../ui";
 import { Cluster } from "./cluster-data-access";
+import { colors, spacing } from "../../theme/shadcn-theme";
+
+interface ClusterPickerRadioButtonGroupRowProps {
+  cluster: Cluster;
+  selected: boolean;
+  onSelect: () => void;
+}
 
 export function ClusterPickerRadioButtonGroupRow({
   cluster,
-}: {
-  cluster: Cluster;
-}) {
+  selected,
+  onSelect,
+}: ClusterPickerRadioButtonGroupRowProps) {
   return (
-    <List.Item
-      title={cluster.name}
-      description={cluster.endpoint}
-      right={() => <RadioButton value={cluster.name} />}
-      style={styles.listItem}
-    />
+    <Pressable onPress={onSelect} style={styles.listItem}>
+      <View style={styles.container}>
+        <View style={styles.textContainer}>
+          <Text variant="p" style={styles.title}>{cluster.name}</Text>
+          <Text variant="small" style={styles.description}>{cluster.endpoint}</Text>
+        </View>
+        <View style={[styles.radio, selected && styles.radioSelected]}>
+          {selected && <View style={styles.radioInner} />}
+        </View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -22,10 +34,37 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
   },
   listItem: {
     paddingVertical: 8,
     paddingHorizontal: 16,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  title: {
+    fontWeight: '500',
+  },
+  description: {
+    color: colors.foregroundMuted,
+    marginTop: 2,
+  },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: colors.primary,
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
   },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
-import { FlatList, Linking, StyleSheet, View, Pressable } from 'react-native';
-import { Text, ActivityIndicator } from 'react-native-paper';
+import { FlatList, Linking, StyleSheet, View, Pressable, ActivityIndicator } from 'react-native';
+import { Text } from '../components/ui';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
