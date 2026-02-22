@@ -56,6 +56,23 @@ export interface ReceiptDto {
   timestamp: number;
 }
 
+function normalizeStreamEvent(rawEvent: unknown): StepEvent {
+  const event = rawEvent as StepEvent & { step?: Partial<StepEvent> };
+
+  if (event?.type !== 'step' || !event.step) {
+    return event;
+  }
+
+  const normalized = {
+    ...event,
+    ...event.step,
+    type: 'step' as const,
+  };
+
+  delete (normalized as { step?: Partial<StepEvent> }).step;
+  return normalized;
+}
+
 const headers = {
   'Content-Type': 'application/json',
   'x-api-key': API_KEY,
@@ -101,7 +118,7 @@ export function openAgentStream(
       return;
     }
     try {
-      const event = JSON.parse(rawData) as StepEvent;
+      const event = normalizeStreamEvent(JSON.parse(rawData));
       callbacks.onEvent(event);
     } catch {
       reportError(new Error('Invalid SSE payload'));

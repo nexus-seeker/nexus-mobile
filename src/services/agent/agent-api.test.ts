@@ -220,6 +220,41 @@ describe('openAgentStream', () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it('normalizes envelope-shaped step events to flat step fields', () => {
+    const source = {
+      onmessage: null as ((event: { data?: string }) => void) | null,
+      onerror: null as (() => void) | null,
+      close: jest.fn(),
+    };
+
+    (globalThis as any).EventSource = jest.fn(() => source);
+
+    const onEvent = jest.fn();
+
+    openAgentStream('run-envelope', {
+      onEvent,
+      onError: jest.fn(),
+    });
+
+    source.onmessage?.({
+      data: JSON.stringify({
+        type: 'step',
+        step: {
+          node: 'parse_intent',
+          label: 'Parsing intent',
+          status: 'running',
+        },
+      }),
+    });
+
+    expect(onEvent).toHaveBeenCalledWith({
+      type: 'step',
+      node: 'parse_intent',
+      label: 'Parsing intent',
+      status: 'running',
+    });
+  });
+
   it('uses XMLHttpRequest fallback when EventSource is unavailable', () => {
     const xhr = createMockXHR();
 
