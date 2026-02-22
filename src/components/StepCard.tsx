@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { Card, Text } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import type { StepEvent } from '../services/agent/agent-api';
 
 interface StepCardProps {
@@ -9,8 +9,8 @@ interface StepCardProps {
 }
 
 export function StepCard({ step, index }: StepCardProps) {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const slideAnim = useRef(new Animated.Value(20)).current;
+    const fadeAnim = useMemo(() => new Animated.Value(0), []);
+    const slideAnim = useMemo(() => new Animated.Value(20), []);
 
     useEffect(() => {
         Animated.parallel([
@@ -27,7 +27,7 @@ export function StepCard({ step, index }: StepCardProps) {
                 useNativeDriver: true,
             }),
         ]).start();
-    }, []);
+    }, [fadeAnim, index, slideAnim]);
 
     const getStatusIcon = () => {
         switch (step.status) {

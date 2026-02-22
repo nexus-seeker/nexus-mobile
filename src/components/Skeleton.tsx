@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
 interface SkeletonProps {
@@ -14,7 +14,7 @@ export function Skeleton({
     borderRadius = 8,
     style,
 }: SkeletonProps) {
-    const pulseAnim = useRef(new Animated.Value(0.3)).current;
+    const pulseAnim = useMemo(() => new Animated.Value(0.3), []);
 
     useEffect(() => {
         const pulse = Animated.loop(
@@ -35,7 +35,7 @@ export function Skeleton({
         );
         pulse.start();
         return () => pulse.stop();
-    }, []);
+    }, [pulseAnim]);
 
     return (
         <Animated.View

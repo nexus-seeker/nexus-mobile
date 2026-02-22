@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import {
   Button,
   Card,
@@ -38,18 +38,18 @@ export function ChatScreen() {
     const trimmed = intent.trim();
     if (!trimmed || runState === 'running') return;
     setIntent('');
+    setIsApprovalSheetVisible(false);
     await executeIntent(trimmed);
+  }
+
+  function handleReset() {
+    setIsApprovalSheetVisible(false);
+    resetRun();
   }
 
   const isRunning = runState === 'running';
   const showApproval = runState === 'awaiting_approval';
   const isSigning = runState === 'signing';
-
-  useEffect(() => {
-    if (!showApproval) {
-      setIsApprovalSheetVisible(false);
-    }
-  }, [showApproval]);
 
   return (
     <View style={styles.screen}>
@@ -130,7 +130,7 @@ export function ChatScreen() {
         {(runState === 'confirmed' || runState === 'rejected' || runState === 'error') && (
           <Button
             mode="text"
-            onPress={resetRun}
+            onPress={handleReset}
             style={{ marginTop: 8 }}
           >
             New intent
@@ -180,9 +180,10 @@ export function ChatScreen() {
         result={result}
         isLoading={isSigning}
         onApprove={() => {
+          setIsApprovalSheetVisible(false);
           void approveTransaction();
         }}
-        onCancel={resetRun}
+        onCancel={handleReset}
       />
     </View>
   );
