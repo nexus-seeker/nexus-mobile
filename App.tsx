@@ -1,8 +1,9 @@
 // Polyfills
 import "./src/polyfills";
 
-import { StyleSheet, useColorScheme } from "react-native";
+import { StyleSheet, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppFonts } from "./src/theme/fonts";
 
 import { ConnectionProvider } from "./src/utils/ConnectionProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -23,7 +24,14 @@ import { PolicyProvider } from "./src/contexts/PolicyContext";
 const queryClient = new QueryClient();
 
 export default function App() {
+  const { fontsLoaded, fontError } = useAppFonts();
   const colorScheme = useColorScheme();
+
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#000" }} />
+    );
+  }
   const { LightTheme, DarkTheme } = adaptNavigationTheme({
     reactNavigationLight: NavigationDefaultTheme,
     reactNavigationDark: NavigationDarkTheme,
