@@ -19,6 +19,18 @@ jest.mock('../components/StepCard', () => ({
   StepCard: () => null,
 }));
 
+jest.mock('@expo/vector-icons', () => ({
+  MaterialCommunityIcons: ({ name }: { name: string }) => null,
+}));
+
+jest.mock('expo-linear-gradient', () => ({
+  LinearGradient: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock('expo-blur', () => ({
+  BlurView: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 jest.mock('react-native-paper', () => {
   const React = require('react');
   const { Button, Text, TextInput, View } = require('react-native');
@@ -77,13 +89,13 @@ describe('ChatScreen approval flow', () => {
     });
   });
 
-  it('opens ApprovalSheet when pressing "Approve with Seed Vault ✋"', () => {
+  it('opens ApprovalSheet when pressing "Approve with Seed Vault"', () => {
     const { getByText, queryByText } = render(<ChatScreen />);
 
     expect(getByText('ApprovalSheet hidden')).toBeTruthy();
     expect(queryByText('ApprovalSheet visible')).toBeNull();
 
-    fireEvent.press(getByText('Approve with Seed Vault ✋'));
+    fireEvent.press(getByText('Approve with Seed Vault'));
 
     expect(getByText('ApprovalSheet visible')).toBeTruthy();
   });
@@ -91,7 +103,7 @@ describe('ChatScreen approval flow', () => {
   it('invokes approveTransaction once when pressing ApprovalSheet approve action', () => {
     const { getByText } = render(<ChatScreen />);
 
-    fireEvent.press(getByText('Approve with Seed Vault ✋'));
+    fireEvent.press(getByText('Approve with Seed Vault'));
     fireEvent.press(getByText('ApprovalSheet approve action'));
 
     expect(approveTransaction).toHaveBeenCalledTimes(1);
