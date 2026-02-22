@@ -18,6 +18,7 @@ export function coercePolicy(input: unknown): PolicyState {
     dailySpentSol?: number | string;
     dailyLimitSol?: number | string;
     allowedProtocols?: string[];
+    isActive?: boolean;
   };
 
   const dailyLimitSol = sanitizeSol(value.dailyLimitSol, DEFAULT_POLICY.dailyLimitSol);
@@ -25,6 +26,7 @@ export function coercePolicy(input: unknown): PolicyState {
   const allowedProtocols = Array.isArray(value.allowedProtocols)
     ? value.allowedProtocols.filter(isPolicyProtocol)
     : DEFAULT_POLICY.allowedProtocols;
+  const isActive = typeof value.isActive === "boolean" ? value.isActive : DEFAULT_POLICY.isActive;
 
   return {
     dailyLimitSol,
@@ -32,6 +34,7 @@ export function coercePolicy(input: unknown): PolicyState {
     allowedProtocols: allowedProtocols.length
       ? dedupeProtocols(allowedProtocols)
       : DEFAULT_POLICY.allowedProtocols,
+    isActive,
   };
 }
 

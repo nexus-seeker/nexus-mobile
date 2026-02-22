@@ -1,4 +1,3 @@
-import { transact } from "@solana-mobile/mobile-wallet-adapter-protocol";
 import { useState, useCallback } from "react";
 import { Button } from "react-native-paper";
 import { alertAndLog } from "../../utils/alertAndLog";
@@ -24,7 +23,7 @@ export function ConnectButton() {
     } finally {
       setAuthorizationInProgress(false);
     }
-  }, [authorizationInProgress, authorizeSession]);
+  }, [authorizationInProgress, connect]);
   return (
     <Button
       mode="contained"
@@ -41,16 +40,16 @@ export function SignInButton() {
   const { authorizeSession } = useAuthorization();
   const { signIn } = useMobileWallet();
   const [signInInProgress, setSignInInProgress] = useState(false);
-  const handleConnectPress = useCallback(async () => {
+  const handleSignInPress = useCallback(async () => {
     try {
       if (signInInProgress) {
         return;
       }
       setSignInInProgress(true);
       await signIn({
-        domain: "yourdomain.com",
-        statement: "Sign into Expo Template App",
-        uri: "https://yourdomain.com",
+        domain: "nexus.app",
+        statement: "Sign into NEXUS",
+        uri: "https://nexus.app",
       });
     } catch (err: any) {
       alertAndLog(
@@ -60,12 +59,12 @@ export function SignInButton() {
     } finally {
       setSignInInProgress(false);
     }
-  }, [signInInProgress, authorizeSession]);
+  }, [signInInProgress, signIn]);
   return (
     <Button
       mode="outlined"
       disabled={signInInProgress}
-      onPress={handleConnectPress}
+      onPress={handleSignInPress}
       style={{ marginLeft: 4, flex: 1 }}
     >
       Sign in
