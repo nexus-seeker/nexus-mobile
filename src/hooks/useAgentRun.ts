@@ -182,6 +182,14 @@ export function useAgentRun() {
                             return;
                         }
 
+                        if (event.type === 'error') {
+                            stopActiveRun(runToken);
+                            removeStillWorkingStep();
+                            setRunState('error');
+                            setError(event.message || 'Agent stream failed. Please retry.');
+                            return;
+                        }
+
                         if (event.type === 'step') {
                             setSteps((prev) => [...prev.filter((step) => !isStillWorkingStep(step)), event]);
                             return;

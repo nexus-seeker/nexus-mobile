@@ -49,6 +49,7 @@ const { useAgentRun } = require('../hooks/useAgentRun');
 
 describe('ChatScreen approval flow', () => {
   const approveTransaction = jest.fn();
+  const executeIntent = jest.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -63,7 +64,7 @@ describe('ChatScreen approval flow', () => {
       },
       confirmedSig: null,
       error: null,
-      executeIntent: jest.fn(),
+      executeIntent,
       approveTransaction,
       resetRun: jest.fn(),
     });
@@ -87,5 +88,33 @@ describe('ChatScreen approval flow', () => {
     fireEvent.press(getByText('ApprovalSheet approve action'));
 
     expect(approveTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows demo-safe transfer action for Jupiter rejection and executes transfer intent', () => {
+    (useAgentRun as jest.Mock).mockReturnValue({
+      runState: 'rejected',
+      steps: [],
+      result: {
+        runId: 'run-2',
+        steps: [],
+        rejection: {
+          reason: 'Jupiter API error: InvalidProgramForExecution',
+          policyField: 'jupiter',
+        },
+      },
+      confirmedSig: null,
+      error: 'Jupiter API error: InvalidProgramForExecution',
+      executeIntent,
+      approveTransaction,
+      resetRun: jest.fn(),
+    });
+
+    const { getByText } = render(<ChatScreen />);
+
+    fireEvent.press(getByText('Try Demo-Safe Transfer'));
+
+    expect(executeIntent).toHaveBeenCalledWith(
+      'Transfer 0.001 SOL to wallet-12345678',
+    );
   });
 });

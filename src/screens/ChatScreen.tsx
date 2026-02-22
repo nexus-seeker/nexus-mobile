@@ -82,6 +82,20 @@ export function ChatScreen() {
   const isRunning = runState === 'running';
   const showApproval = runState === 'awaiting_approval';
   const isSigning = runState === 'signing';
+  const rejectionField = result?.rejection?.policyField;
+  const showDemoSafeTransfer =
+    runState === 'rejected' &&
+    !!pubkey &&
+    (rejectionField === 'jupiter' ||
+      (rejectionField === 'tx_assembly' &&
+        (error?.includes('InvalidProgramForExecution') ?? false)));
+
+  async function handleDemoSafeTransfer() {
+    if (!pubkey) return;
+    setIsApprovalSheetVisible(false);
+    setIntent('');
+    await executeIntent(`Transfer 0.001 SOL to ${pubkey}`);
+  }
 
   return (
     <KeyboardAvoidingView
@@ -154,6 +168,18 @@ export function ChatScreen() {
             </Text>
             <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>{error}</Text>
           </View>
+        )}
+
+        {showDemoSafeTransfer && (
+          <Card variant="outline" style={styles.fallbackCard}>
+            <Text style={styles.fallbackTitle}>Swap unavailable on current devnet route</Text>
+            <Text variant="muted" style={styles.fallbackText}>
+              Continue the no-mock demo with a policy-guarded SPL transfer.
+            </Text>
+            <Button onPress={() => void handleDemoSafeTransfer()} style={styles.fallbackButton}>
+              Try Demo-Safe Transfer
+            </Button>
+          </Card>
         )}
 
         {/* Approve Button */}
@@ -350,6 +376,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.error,
+  },
+  fallbackCard: {
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  fallbackTitle: {
+    color: colors.foreground,
+    fontSize: typography.sizeBase,
+    fontWeight: typography.weightSemibold,
+  },
+  fallbackText: {
+    marginBottom: spacing.xs,
+  },
+  fallbackButton: {
+    marginTop: spacing.xs,
   },
   approvalSection: {
     gap: spacing.md,

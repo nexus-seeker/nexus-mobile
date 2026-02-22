@@ -139,6 +139,43 @@ describe('useAgentRun SSE lifecycle', () => {
     expect(result.current.error).toContain('timed out');
   });
 
+  it('fails fast when stream emits backend error event', async () => {
+    (executeAgent as jest.Mock).mockResolvedValue({
+      runId: 'run-missing',
+      steps: [],
+    });
+
+    let handlers:
+      | {
+          onEvent: (event: StepEvent) => void;
+          onError: (error: Error) => void;
+        }
+      | undefined;
+
+    (openAgentStream as jest.Mock).mockImplementation(
+      (_runId: string, callbacks: { onEvent: (event: StepEvent) => void; onError: (error: Error) => void }) => {
+        handlers = callbacks;
+        return () => undefined;
+      },
+    );
+
+    const { result } = renderHook(() => useAgentRun());
+
+    await act(async () => {
+      await result.current.executeIntent('Swap 0.1 SOL to USDC');
+    });
+
+    await act(async () => {
+      handlers?.onEvent({
+        type: 'error',
+        message: 'Run not found or expired',
+      } as any);
+    });
+
+    expect(result.current.runState).toBe('error');
+    expect(result.current.error).toContain('Run not found or expired');
+  });
+
   it('ignores stale stream callbacks from an older executeIntent run', async () => {
     const deferred = () => {
       let resolve!: (value: any) => void;

@@ -1,17 +1,18 @@
 // Shared contract types matching nexus-api/src/agent/state.ts
 
 const API_BASE_URL =
-  process.env.EXPO_PUBLIC_AGENT_API_URL || 'http://10.161.161.77:3000/api';
+  process.env.EXPO_PUBLIC_AGENT_API_URL || 'http://localhost:3001';
 const API_KEY =
   process.env.EXPO_PUBLIC_API_KEY || 'nexus-hackathon-key';
 
 export interface StepEvent {
-  type: 'step' | 'heartbeat' | 'complete';
+  type: 'step' | 'heartbeat' | 'complete' | 'error';
   node?: string;
   label?: string;
   status?: 'running' | 'success' | 'rejected';
   payload?: any;
   result?: AgentRunResult;
+  message?: string;
 }
 
 export interface AgentRunResult {

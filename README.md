@@ -64,3 +64,41 @@ npm run test:ci
 - MWA and Seed Vault flows require an Expo development build (not Expo Go).
 - Physical Seeker validation is required for fingerprint/double-tap signing.
 - Local emulator checks are useful for non-hardware UI and state flow.
+
+## Judge Runbook (No Mock, Devnet)
+
+Use this runbook for a real, no-mock demo loop.
+
+1. Start API in real mode (`nexus-api`):
+
+```bash
+cp .env.example .env
+npm install
+MOCK_MODE=false npm run start:dev
+```
+
+2. Start mobile app (`nexus-mobile`):
+
+```bash
+cp .env.example .env
+npm install
+npm run start
+```
+
+3. Confirm mobile env values:
+
+- `EXPO_PUBLIC_AGENT_API_URL=http://localhost:3001`
+- `EXPO_PUBLIC_API_KEY=nexus-hackathon-key`
+- `EXPO_PUBLIC_POLICY_PROGRAM_ID=DxV7vXf919YddC74X726PpsrPpHLXNZtdBsk6Lweh3HJ`
+
+4. Demo intents (in Chat screen):
+
+- Preferred successful path: `Transfer 0.001 SOL to <recipient_pubkey>`
+- Swap path (current devnet route may reject): `Swap 0.01 SOL to USDC`
+- On swap rejection, tap `Try Demo-Safe Transfer` and continue signing flow.
+
+5. Policy rejection demo:
+
+- In Policy tab, keep a low daily cap (for example `0.5 SOL`)
+- Try: `Transfer 1 SOL to <recipient_pubkey>`
+- Expect rejection before approval step.
