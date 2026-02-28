@@ -22,9 +22,9 @@ import { Button, Card, Input, Text } from '../components/ui';
 import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
 
 const SUGGESTIONS = [
-  'Swap 0.1 SOL to USDC',
-  'Send 0.05 SOL to alice.skr',
-  'Stake 2 SOL on Marginfi',
+  'Pay alice.skr 500 USDC, bob.skr 300 USDC',
+  'Run payroll for 5 contractors in USDC',
+  'Review this week\'s payroll and send when policy-safe',
 ];
 
 // Status Indicator
@@ -125,6 +125,12 @@ export function ChatScreen() {
       (rejectionField === 'tx_assembly' &&
         (error?.includes('InvalidProgramForExecution') ?? false)));
   const showOnboardingPrompt = runState === 'rejected' && rejectionField === 'not_onboarded' && !!pubkey;
+  const showPayrollPolicyGuidance =
+    runState === 'rejected' &&
+    !!error &&
+    rejectionField !== 'jupiter' &&
+    rejectionField !== 'tx_assembly' &&
+    rejectionField !== 'not_onboarded';
 
   // Navigate back to the onboarding gate so the user can set up properly
   function handleGoToSetup() {
@@ -241,6 +247,16 @@ export function ChatScreen() {
             <Text variant="h4" style={{ color: colors.error, marginTop: spacing.sm }}>
               {runState === 'rejected' ? 'Policy Rejected' : 'Error'}
             </Text>
+            {showPayrollPolicyGuidance && (
+              <>
+                <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>
+                  This payroll intent is outside your policy limits.
+                </Text>
+                <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>
+                  Lower amounts or split the payroll run, then submit again.
+                </Text>
+              </>
+            )}
             <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>{error}</Text>
           </View>
         )}
