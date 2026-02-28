@@ -8,11 +8,13 @@ const KNOWN_NODE_LABELS: Record<string, string> = {
     validate_policy: '②',
     plan_actions: '②',
     build_transaction: '③',
+    tool_executor: '③',
     resolve_recipients: '③',
     policy_precheck: '④',
     multi_send_usdc: '⑤',
     simulate_tx: '⑥',
     assemble_tx: '⑦',
+    synthesize_response: '⑧',
 };
 
 const ORDINAL_LABELS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];

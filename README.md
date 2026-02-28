@@ -65,16 +65,16 @@ npm run test:ci
 - Physical Seeker validation is required for fingerprint/double-tap signing.
 - Local emulator checks are useful for non-hardware UI and state flow.
 
-## Judge Runbook (No Mock, Devnet)
+## Judge Runbook (Devnet E2E)
 
-Use this runbook for a real, no-mock demo loop.
+Use this runbook for a real end-to-end demo loop.
 
-1. Start API in real mode (`nexus-api`):
+1. Start API (`nexus-api`):
 
 ```bash
 cp .env.example .env
 npm install
-MOCK_MODE=false npm run start:dev
+npm run start:dev
 ```
 
 2. Start mobile app (`nexus-mobile`):
