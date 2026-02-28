@@ -5,6 +5,14 @@ jest.mock('../hooks/useAgentRun', () => ({
   useAgentRun: jest.fn(),
 }));
 
+jest.mock('../hooks/useHistory', () => ({
+  useHistory: () => ({
+    data: { messages: [] },
+    isLoading: false,
+    error: null,
+  }),
+}));
+
 jest.mock('../utils/useAuthorization', () => ({
   useAuthorization: () => ({
     selectedAccount: {
@@ -25,6 +33,21 @@ jest.mock('@expo/vector-icons', () => ({
 
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: jest.fn(),
+  }),
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  }),
 }));
 
 jest.mock('expo-blur', () => ({
