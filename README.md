@@ -87,7 +87,8 @@ npm run start
 
 3. Confirm mobile env values:
 
-- `EXPO_PUBLIC_AGENT_API_URL=http://localhost:3001`
+- `EXPO_PUBLIC_AGENT_API_URL=http://localhost:3001` (emulator only)
+- For physical Seeker demos, use a host the device can reach (LAN IP or tunnel URL) instead of `localhost`.
 - `EXPO_PUBLIC_API_KEY=nexus-hackathon-key`
 - `EXPO_PUBLIC_POLICY_PROGRAM_ID=DxV7vXf919YddC74X726PpsrPpHLXNZtdBsk6Lweh3HJ`
 
