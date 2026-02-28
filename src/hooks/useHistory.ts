@@ -3,10 +3,15 @@ import { fetchHistory } from '../services/agent/agent-api';
 
 const DEFAULT_LIMIT = 50;
 
-export function useHistory(pubkey: string | undefined, limit = DEFAULT_LIMIT) {
+export function useHistory(
+  pubkey: string | undefined,
+  limit = DEFAULT_LIMIT,
+  beforeTs?: number,
+  beforeId?: string,
+) {
   return useQuery({
-    queryKey: ['history', pubkey, limit],
-    queryFn: () => fetchHistory(pubkey!, limit, undefined, undefined),
+    queryKey: ['history', pubkey, limit, beforeTs, beforeId],
+    queryFn: () => fetchHistory(pubkey!, limit, beforeTs, beforeId),
     enabled: !!pubkey,
   });
 }

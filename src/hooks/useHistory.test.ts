@@ -57,4 +57,25 @@ describe('useHistory', () => {
     await expect(queryOptions.queryFn()).resolves.toEqual(payload);
     expect(fetchHistory).toHaveBeenCalledWith('wallet/with space', 25, undefined, undefined);
   });
+
+  it('forwards cursor params to query key and fetchHistory', async () => {
+    const payload = {
+      messages: [{ id: 'm-2', role: 'assistant', content: 'hello', runId: 'run-2', timestamp: 2 }],
+      nextCursor: 3,
+      nextCursorId: 'm-3',
+    };
+    (fetchHistory as jest.Mock).mockResolvedValue(payload);
+
+    renderHook(() => useHistory('wallet-2', 10, 1700000000, 'msg-99'));
+
+    expect(useQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['history', 'wallet-2', 10, 1700000000, 'msg-99'],
+      }),
+    );
+
+    const queryOptions = (useQuery as jest.Mock).mock.calls[0][0];
+    await expect(queryOptions.queryFn()).resolves.toEqual(payload);
+    expect(fetchHistory).toHaveBeenCalledWith('wallet-2', 10, 1700000000, 'msg-99');
+  });
 });
