@@ -95,7 +95,7 @@ npm run start
 
 - Preferred successful path: `Pay alice.skr 500 USDC, bob.skr 300 USDC`
 - Approval behavior: the approval sheet should show a `Recipients` list and a `Total` row (for this prompt, `800 USDC`) before signing.
-- Fallback path (if payroll route is unavailable): `Try Demo-Safe Transfer` and continue signing flow.
+- Fallback path (if swap/Jupiter rejects the payroll attempt): use `Try Demo-Safe Transfer` and continue signing flow.
 
 5. Policy rejection demo:
 
