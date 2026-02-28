@@ -336,6 +336,10 @@ export async function fetchHistory(
   beforeTs?: number,
   beforeId?: string,
 ): Promise<HistoryResponseDto> {
+  if (beforeId !== undefined && beforeTs === undefined) {
+    throw new Error('Invalid history cursor: beforeTs is required when beforeId is provided');
+  }
+
   const params = [
     `pubkey=${encodeURIComponent(pubkey)}`,
     `limit=${encodeURIComponent(String(limit))}`,

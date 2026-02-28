@@ -78,4 +78,28 @@ describe('useHistory', () => {
     await expect(queryOptions.queryFn()).resolves.toEqual(payload);
     expect(fetchHistory).toHaveBeenCalledWith('wallet-2', 10, 1700000000, 'msg-99');
   });
+
+  it('does not execute fetch when beforeId is provided without beforeTs', () => {
+    (useQuery as jest.Mock).mockImplementation(({ enabled, queryFn }) => {
+      if (enabled) {
+        queryFn();
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        error: null,
+      };
+    });
+
+    renderHook(() => useHistory('wallet-3', 20, undefined, 'msg-1'));
+
+    expect(useQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['history', 'wallet-3', 20, undefined, 'msg-1'],
+        enabled: false,
+      }),
+    );
+    expect(fetchHistory).not.toHaveBeenCalled();
+  });
 });

@@ -9,9 +9,11 @@ export function useHistory(
   beforeTs?: number,
   beforeId?: string,
 ) {
+  const hasInvalidCursor = beforeId !== undefined && beforeTs === undefined;
+
   return useQuery({
     queryKey: ['history', pubkey, limit, beforeTs, beforeId],
     queryFn: () => fetchHistory(pubkey!, limit, beforeTs, beforeId),
-    enabled: !!pubkey,
+    enabled: !!pubkey && !hasInvalidCursor,
   });
 }

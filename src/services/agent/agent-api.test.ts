@@ -194,6 +194,13 @@ describe('agent-api contract', () => {
     await expect(fetchHistory('wallet-1', 50)).rejects.toThrow('History fetch failed: 404');
   });
 
+  it('fetchHistory rejects when beforeId is provided without beforeTs', async () => {
+    await expect(fetchHistory('wallet-1', 50, undefined, 'msg-1')).rejects.toThrow(
+      'Invalid history cursor: beforeTs is required when beforeId is provided',
+    );
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
+
   it('getSSEUrl builds stream url from api base', () => {
     expect(getSSEUrl('run-42')).toBe(`${API_BASE_URL}/agent/run-42/stream`);
   });
