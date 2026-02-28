@@ -167,7 +167,6 @@ export function HistoryScreen() {
     queryKey: ['receipts', pubkey],
     queryFn: () => fetchReceipts(pubkey!),
     enabled: !!pubkey,
-    refetchInterval: 10_000,
   });
 
   if (!pubkey) {
@@ -191,7 +190,7 @@ export function HistoryScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator animating color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Loading receipts...</Text>
+        <Text style={styles.loadingText}>Loading cached receipts...</Text>
       </View>
     );
   }
@@ -228,7 +227,7 @@ export function HistoryScreen() {
           <MaterialCommunityIcons name="history" size={32} color={colors.foreground} />
           <Text style={styles.headerTitle}>Transaction History</Text>
           <Text style={styles.headerSubtitle}>
-            {receipts?.length || 0} transactions
+            {receipts?.length || 0} cached receipts
           </Text>
         </View>
       </LinearGradient>

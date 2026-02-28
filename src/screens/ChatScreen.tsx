@@ -15,6 +15,7 @@ import { useNavigation, type NavigationProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type RootStackParamList } from '../navigators/AppNavigator';
 import { useAgentRun } from '../hooks/useAgentRun';
+import { useHistory } from '../hooks/useHistory';
 import { StepCard } from '../components/StepCard';
 import { ApprovalSheet } from '../components/ApprovalSheet';
 import { Button, Card, Input, Text } from '../components/ui';
@@ -72,6 +73,8 @@ export function ChatScreen() {
   } = useAgentRun();
 
   const pubkey = selectedAccount?.publicKey.toBase58();
+  const { data: historyData } = useHistory(pubkey);
+  const historyMessages = historyData?.messages ?? [];
   const shortPubkey = pubkey
     ? `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}.skr`
     : 'Not connected';
@@ -166,6 +169,25 @@ export function ChatScreen() {
           </View>
         )}
 
+        {historyMessages.length > 0 && (
+          <Card style={styles.historyCard}>
+            <View style={styles.agentCardHeader}>
+              <MaterialCommunityIcons name="history" size={18} color={colors.primaryLight} />
+              <Text style={styles.agentLabel}>PERSISTED HISTORY</Text>
+            </View>
+            <View style={styles.historyMessagesContainer}>
+              {historyMessages.map((message) => (
+                <View key={message.id} style={styles.historyMessageRow}>
+                  <Text style={styles.historyRoleLabel}>
+                    {message.role === 'user' ? 'YOU' : 'AGENT'}
+                  </Text>
+                  <Text>{message.content}</Text>
+                </View>
+              ))}
+            </View>
+          </Card>
+        )}
+
         {/* Agent Steps */}
         {steps.length > 0 && (
           <Card style={styles.agentCard}>
@@ -255,7 +277,7 @@ export function ChatScreen() {
         )}
 
         {/* Empty State */}
-        {steps.length === 0 && runState === 'idle' && (
+        {steps.length === 0 && runState === 'idle' && historyMessages.length === 0 && (
           <View style={styles.emptyState}>
             <View style={styles.emptyStateOrb}>
               <MaterialCommunityIcons name="brain" size={40} color={colors.primaryLight} />
@@ -423,6 +445,9 @@ const styles = StyleSheet.create({
   agentCard: {
     padding: spacing.lg,
   },
+  historyCard: {
+    padding: spacing.lg,
+  },
   agentCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -437,6 +462,18 @@ const styles = StyleSheet.create({
   },
   stepsContainer: {
     gap: spacing.sm,
+  },
+  historyMessagesContainer: {
+    gap: spacing.md,
+  },
+  historyMessageRow: {
+    gap: spacing.xs,
+  },
+  historyRoleLabel: {
+    color: colors.foregroundMuted,
+    fontSize: typography.sizeXs,
+    fontWeight: typography.weightSemibold,
+    letterSpacing: 1,
   },
   successCard: {
     borderRadius: radii.xl,
