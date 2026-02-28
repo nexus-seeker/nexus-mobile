@@ -1,19 +1,8 @@
-import { ClusterNetwork, useCluster } from "./cluster-data-access";
+import { useCluster } from "./cluster-data-access";
 import { ClusterPickerRadioButtonGroupRow } from "./cluster-ui";
 import { Text } from "../ui";
 import { View, StyleSheet } from "react-native";
 import { spacing } from "../../theme/shadcn-theme";
-
-function clusternetworkToIndex(clusterName: string): number {
-  switch (clusterName) {
-    case ClusterNetwork.Devnet:
-      return 0;
-    case ClusterNetwork.Testnet:
-      return 1;
-    default:
-      throw Error("Invalid cluster selected");
-  }
-}
 
 export default function ClusterPickerFeature() {
   const { selectedCluster, clusters, setSelectedCluster } = useCluster();

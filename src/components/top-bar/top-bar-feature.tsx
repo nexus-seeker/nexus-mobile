@@ -1,5 +1,5 @@
 import { StyleSheet, View } from "react-native";
-import { TopBarWalletMenu, TopBarSettingsButton } from "./top-bar-ui";
+import { TopBarWalletMenu } from "./top-bar-ui";
 import { useNavigation } from "@react-navigation/core";
 import { Button } from "../ui";
 import { colors, spacing } from "../../theme/shadcn-theme";

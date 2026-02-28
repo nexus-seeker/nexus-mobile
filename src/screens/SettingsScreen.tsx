@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import { OneSignal } from 'react-native-onesignal';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import ClusterPickerFeature from '../components/cluster/cluster-picker-feature';
 import { useNotifications } from '../hooks/useNotifications';
 
@@ -58,20 +59,11 @@ export function SettingsScreen() {
     updatePreferences,
   } = useNotifications();
 
-  const [playerId, setPlayerId] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadPlayerId();
-  }, []);
-
-  const loadPlayerId = async () => {
-    try {
-      const id = await getPlayerId();
-      setPlayerId(id);
-    } catch (err) {
-      console.error('Failed to load player ID:', err);
-    }
-  };
+  const { data: playerId } = useQuery({
+    queryKey: ['notifications', 'player-id'],
+    queryFn: getPlayerId,
+    staleTime: 60_000,
+  });
 
   const handleMasterToggle = async (value: boolean) => {
     try {

@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Modal as RNModal } from 'react-native';
 import { Button, Text, Card, Separator } from './ui';
 import type { AgentRunResult } from '../services/agent/agent-api';
-import { colors, spacing } from '../theme/shadcn-theme';
+import { colors } from '../theme/shadcn-theme';
 
 interface ApprovalSheetProps {
     visible: boolean;

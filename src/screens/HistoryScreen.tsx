@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthorization } from '../utils/useAuthorization';
 import { fetchReceipts, type ReceiptDto } from '../services/agent/agent-api';
-import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
+import { colors, spacing, radii, typography } from '../theme/shadcn-theme';
 
 // Status Badge Component
 function StatusBadge({ status }: { status: string }) {

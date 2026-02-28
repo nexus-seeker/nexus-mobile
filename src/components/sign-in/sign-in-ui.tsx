@@ -1,11 +1,9 @@
 import { useState, useCallback } from "react";
 import { Button } from "../ui";
 import { alertAndLog } from "../../utils/alertAndLog";
-import { useAuthorization } from "../../utils/useAuthorization";
 import { useMobileWallet } from "../../utils/useMobileWallet";
 
 export function ConnectButton() {
-  const { authorizeSession } = useAuthorization();
   const { connect } = useMobileWallet();
   const [authorizationInProgress, setAuthorizationInProgress] = useState(false);
   const handleConnectPress = useCallback(async () => {
@@ -36,7 +34,6 @@ export function ConnectButton() {
 }
 
 export function SignInButton() {
-  const { authorizeSession } = useAuthorization();
   const { signIn } = useMobileWallet();
   const [signInInProgress, setSignInInProgress] = useState(false);
   const handleSignInPress = useCallback(async () => {

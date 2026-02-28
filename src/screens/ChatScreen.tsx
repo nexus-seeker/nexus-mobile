@@ -68,7 +68,7 @@ function getHistoryRoleLabel(role: string): string {
 }
 
 export function ChatScreen() {
-  const { selectedAccount, authorizeSession } = useAuthorization();
+  const { selectedAccount } = useAuthorization();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const insets = useSafeAreaInsets();
   const [intent, setIntent] = useState('');

@@ -46,7 +46,7 @@ export function Button({
     styles[`${size}Text`],
   ];
 
-  const scale = React.useRef(new Animated.Value(1)).current;
+  const [scale] = React.useState(() => new Animated.Value(1));
   const [isPressed, setIsPressed] = React.useState(false);
 
   const handlePressIn = (e: any) => {

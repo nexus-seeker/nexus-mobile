@@ -1,7 +1,7 @@
 import { OneSignal, NotificationWillDisplayEvent, NotificationClickEvent } from 'react-native-onesignal';
 import { getRouteForNotification, validateDeepLink } from './notifications/router';
 import { getPreferences, savePreferences } from './notifications/storage';
-import { NotificationCategory, ANDROID_CHANNELS } from './notifications/types';
+import { NotificationCategory } from './notifications/types';
 
 const ONE_SIGNAL_APP_ID = 'e7b51ed4-d08f-4224-8fc4-8868d6024f39';
 
