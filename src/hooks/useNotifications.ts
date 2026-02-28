@@ -6,23 +6,38 @@ import { NotificationPreferences } from '../services/notifications/types';
 export const useNotifications = () => {
   const [prefs, setPrefs] = useState<NotificationPreferences>(getDefaultPreferences());
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPreferences();
   }, []);
 
   const loadPreferences = async () => {
-    const loaded = await getPreferences();
-    setPrefs(loaded);
-    setIsLoading(false);
+    try {
+      setError(null);
+      const loaded = await getPreferences();
+      setPrefs(loaded);
+    } catch (err) {
+      setError('Failed to load notification preferences');
+      console.error('Failed to load preferences:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updatePreferences = useCallback(
     async (updates: Partial<NotificationPreferences>) => {
-      const newPrefs = { ...prefs, ...updates };
-      setPrefs(newPrefs);
-      await savePreferences(newPrefs);
-      return newPrefs;
+      try {
+        setError(null);
+        const newPrefs = { ...prefs, ...updates };
+        setPrefs(newPrefs);
+        await savePreferences(newPrefs);
+        return newPrefs;
+      } catch (err) {
+        setError('Failed to save notification preferences');
+        console.error('Failed to save preferences:', err);
+        throw err;
+      }
     },
     [prefs]
   );
@@ -73,6 +88,7 @@ export const useNotifications = () => {
   return {
     prefs,
     isLoading,
+    error,
     updatePreferences,
     checkPermissionStatus,
     requestPermission,
