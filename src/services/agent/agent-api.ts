@@ -10,7 +10,7 @@ export interface StepEvent {
   node?: string;
   label?: string;
   status?: 'running' | 'success' | 'rejected';
-  payload?: any;
+  payload?: unknown;
   result?: AgentRunResult;
   message?: string;
 }
