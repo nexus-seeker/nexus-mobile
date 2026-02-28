@@ -113,6 +113,50 @@ describe('ChatScreen approval flow', () => {
     expect(approveTransaction).toHaveBeenCalledTimes(1);
   });
 
+  it('shows payroll-first suggestion chips while idle', () => {
+    (useAgentRun as jest.Mock).mockReturnValue({
+      runState: 'idle',
+      steps: [],
+      result: null,
+      confirmedSig: null,
+      error: null,
+      executeIntent,
+      approveTransaction,
+      resetRun: jest.fn(),
+    });
+
+    const { getByText } = render(<ChatScreen />);
+
+    expect(getByText('Pay alice.skr 500 USDC, bob.skr 300 USDC')).toBeTruthy();
+    expect(getByText('Run payroll for 5 contractors in USDC')).toBeTruthy();
+  });
+
+  it('shows payroll policy guidance copy when run is rejected by limits', () => {
+    (useAgentRun as jest.Mock).mockReturnValue({
+      runState: 'rejected',
+      steps: [],
+      result: {
+        runId: 'run-3',
+        steps: [],
+        rejection: {
+          reason: 'Per-recipient amount exceeds policy limit',
+          policyField: 'per_recipient_limit',
+        },
+      },
+      confirmedSig: null,
+      error: 'Per-recipient amount exceeds policy limit',
+      executeIntent,
+      approveTransaction,
+      resetRun: jest.fn(),
+    });
+
+    const { getByText } = render(<ChatScreen />);
+
+    expect(getByText('Policy Rejected')).toBeTruthy();
+    expect(getByText('This payroll intent is outside your policy limits.')).toBeTruthy();
+    expect(getByText('Lower amounts or split the payroll run, then submit again.')).toBeTruthy();
+  });
+
   it('shows demo-safe transfer action for Jupiter rejection and executes transfer intent', () => {
     (useAgentRun as jest.Mock).mockReturnValue({
       runState: 'rejected',

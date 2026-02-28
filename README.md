@@ -87,15 +87,16 @@ npm run start
 
 3. Confirm mobile env values:
 
-- `EXPO_PUBLIC_AGENT_API_URL=http://localhost:3001`
+- `EXPO_PUBLIC_AGENT_API_URL=http://localhost:3001` (emulator only)
+- For physical Seeker demos, use a host the device can reach (LAN IP or tunnel URL) instead of `localhost`.
 - `EXPO_PUBLIC_API_KEY=nexus-hackathon-key`
 - `EXPO_PUBLIC_POLICY_PROGRAM_ID=DxV7vXf919YddC74X726PpsrPpHLXNZtdBsk6Lweh3HJ`
 
-4. Demo intents (in Chat screen):
+4. Demo intents (in Chat screen, payroll-first v1):
 
-- Preferred successful path: `Transfer 0.001 SOL to <recipient_pubkey>`
-- Swap path (current devnet route may reject): `Swap 0.01 SOL to USDC`
-- On swap rejection, tap `Try Demo-Safe Transfer` and continue signing flow.
+- Preferred successful path: `Pay alice.skr 500 USDC, bob.skr 300 USDC`
+- Approval behavior: the approval sheet should show a `Recipients` list and a `Total` row (for this prompt, `800 USDC`) before signing.
+- Fallback path (if swap/Jupiter rejects the payroll attempt): use `Try Demo-Safe Transfer` and continue signing flow.
 
 5. Policy rejection demo:
 

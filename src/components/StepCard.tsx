@@ -3,6 +3,50 @@ import { Animated, StyleSheet, View } from 'react-native';
 import { Text } from './ui';
 import type { StepEvent } from '../services/agent/agent-api';
 
+const KNOWN_NODE_LABELS: Record<string, string> = {
+    parse_intent: '①',
+    validate_policy: '②',
+    plan_actions: '②',
+    build_transaction: '③',
+    resolve_recipients: '③',
+    policy_precheck: '④',
+    multi_send_usdc: '⑤',
+    simulate_tx: '⑥',
+    assemble_tx: '⑦',
+};
+
+const ORDINAL_LABELS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+
+function getOrdinalLabel(order: number): string {
+    if (order >= 1 && order <= ORDINAL_LABELS.length) {
+        return ORDINAL_LABELS[order - 1];
+    }
+
+    return `${order}.`;
+}
+
+function getOrderFromPayload(payload: unknown): number | null {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    const metadata = payload as { order?: unknown; stepIndex?: unknown };
+
+    if (typeof metadata.order === 'number' && Number.isInteger(metadata.order) && metadata.order > 0) {
+        return metadata.order;
+    }
+
+    if (
+        typeof metadata.stepIndex === 'number' &&
+        Number.isInteger(metadata.stepIndex) &&
+        metadata.stepIndex >= 0
+    ) {
+        return metadata.stepIndex + 1;
+    }
+
+    return null;
+}
+
 interface StepCardProps {
     step: StepEvent;
     index: number;
@@ -56,13 +100,17 @@ export function StepCard({ step, index }: StepCardProps) {
     };
 
     const getNodeLabel = () => {
-        const labels: Record<string, string> = {
-            parse_intent: '①',
-            validate_policy: '②',
-            build_transaction: '③',
-            assemble_tx: '④',
-        };
-        return labels[step.node || ''] || '•';
+        const knownLabel = KNOWN_NODE_LABELS[step.node || ''];
+        if (knownLabel) {
+            return knownLabel;
+        }
+
+        const order = getOrderFromPayload(step.payload);
+        if (order !== null) {
+            return getOrdinalLabel(order);
+        }
+
+        return '•';
     };
 
     return (

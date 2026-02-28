@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Modal as RNModal } from 'react-native';
 import { Button, Text, Card, Separator } from './ui';
 import type { AgentRunResult } from '../services/agent/agent-api';
+import { extractPayrollPreview } from '../features/payroll/payroll-preview';
 import { colors } from '../theme/shadcn-theme';
 
 interface ApprovalSheetProps {
@@ -23,6 +24,11 @@ export function ApprovalSheet({
 
     const simulation = result.simulation;
     const lastStep = result.steps[result.steps.length - 1];
+    const payrollPreview = extractPayrollPreview(result);
+    const visibleRecipients = payrollPreview ? payrollPreview.recipients.slice(0, 10) : [];
+    const hiddenRecipientCount = payrollPreview
+        ? Math.max(payrollPreview.recipients.length - visibleRecipients.length, 0)
+        : 0;
 
     return (
         <RNModal
@@ -49,6 +55,42 @@ export function ApprovalSheet({
                                 {lastStep?.label || 'Transaction ready'}
                             </Text>
                         </View>
+
+                        {payrollPreview && (
+                            <>
+                                <View style={styles.summaryRow}>
+                                    <Text variant="muted" style={styles.summaryLabel}>
+                                        Recipients
+                                    </Text>
+                                    <Text variant="p" style={styles.summaryValue}>
+                                        {payrollPreview.recipients.length}
+                                    </Text>
+                                </View>
+                                {visibleRecipients.map((recipient) => (
+                                    <View key={`${recipient.address}-${recipient.display}`} style={styles.summaryRow}>
+                                        <Text variant="p" style={styles.summaryLabel}>
+                                            {recipient.display}
+                                        </Text>
+                                        <Text variant="p" style={styles.summaryValue}>
+                                            {recipient.amountUi} {payrollPreview.tokenSymbol}
+                                        </Text>
+                                    </View>
+                                ))}
+                                {hiddenRecipientCount > 0 && (
+                                    <Text variant="small" style={styles.moreRecipients}>
+                                        +{hiddenRecipientCount} more
+                                    </Text>
+                                )}
+                                <View style={styles.summaryRow}>
+                                    <Text variant="muted" style={styles.summaryLabel}>
+                                        Total
+                                    </Text>
+                                    <Text variant="p" style={styles.summaryValue}>
+                                        {payrollPreview.totalUi} {payrollPreview.tokenSymbol}
+                                    </Text>
+                                </View>
+                            </>
+                        )}
 
                         {/* Simulation Results */}
                         {simulation && (
@@ -146,6 +188,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         maxWidth: '60%',
         textAlign: 'right',
+    },
+    moreRecipients: {
+        color: '#94a3b8',
+        textAlign: 'right',
+        marginTop: -2,
     },
     hint: {
         textAlign: 'center',
