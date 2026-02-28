@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:709155056447:android:950682abd09d9843fdc18a",
+        "mobilesdk_app_id": "YOUR_MOBILE_SDK_APP_ID",
         "android_client_info": {
           "package_name": "com.benelabs.kawula"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCLWQ408O-2tMnFNMlZZBNpyo6_a4_1meg"
+          "current_key": "YOUR_GOOGLE_API_KEY"
         }
       ],
       "services": {
