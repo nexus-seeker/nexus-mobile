@@ -58,9 +58,12 @@ export function StepCard({ step, index }: StepCardProps) {
     const getNodeLabel = () => {
         const labels: Record<string, string> = {
             parse_intent: '①',
-            validate_policy: '②',
-            build_transaction: '③',
-            assemble_tx: '④',
+            plan_actions: '②',
+            resolve_recipients: '③',
+            policy_precheck: '④',
+            multi_send_usdc: '⑤',
+            simulate_tx: '⑥',
+            assemble_tx: '⑦',
         };
         return labels[step.node || ''] || '•';
     };
