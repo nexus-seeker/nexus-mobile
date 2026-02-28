@@ -5,7 +5,9 @@ import type { StepEvent } from '../services/agent/agent-api';
 
 const KNOWN_NODE_LABELS: Record<string, string> = {
     parse_intent: '①',
+    validate_policy: '②',
     plan_actions: '②',
+    build_transaction: '③',
     resolve_recipients: '③',
     policy_precheck: '④',
     multi_send_usdc: '⑤',

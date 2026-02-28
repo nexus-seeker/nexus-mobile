@@ -4,10 +4,12 @@ import { StepCard } from './StepCard';
 import type { StepEvent } from '../services/agent/agent-api';
 
 describe('StepCard', () => {
-  it('renders node labels for dynamic tool-calling steps', () => {
-    const cases: Array<{ node: string; symbol: string }> = [
+  it('renders node labels for dynamic and legacy tool-calling steps', () => {
+    const cases: { node: string; symbol: string }[] = [
       { node: 'parse_intent', symbol: '①' },
+      { node: 'validate_policy', symbol: '②' },
       { node: 'plan_actions', symbol: '②' },
+      { node: 'build_transaction', symbol: '③' },
       { node: 'resolve_recipients', symbol: '③' },
       { node: 'policy_precheck', symbol: '④' },
       { node: 'multi_send_usdc', symbol: '⑤' },
