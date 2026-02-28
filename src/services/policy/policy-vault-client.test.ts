@@ -44,6 +44,10 @@ jest.mock("@solana/web3.js", () => {
         })),
       };
     }
+
+    compileToV0Message() {
+      return this.compileToLegacyMessage();
+    }
   }
 
   class VersionedTransaction {

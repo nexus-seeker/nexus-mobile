@@ -1,6 +1,7 @@
 import {
   API_BASE_URL,
   executeAgent,
+  fetchHistory,
   fetchPolicy,
   fetchReceipts,
   getSSEUrl,
@@ -140,6 +141,64 @@ describe('agent-api contract', () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 429 });
 
     await expect(fetchReceipts('wallet-1')).rejects.toThrow('Receipts fetch failed: 429');
+  });
+
+  it('fetchHistory requests encoded pubkey with limit and returns history payload', async () => {
+    const history = {
+      messages: [
+        {
+          id: 'message-1',
+          role: 'user',
+          content: 'Swap 0.1 SOL to USDC',
+          runId: 'run-1',
+          timestamp: 1700000000000,
+        },
+      ],
+      nextCursor: 1699999999000,
+      nextCursorId: 'message-0',
+    };
+
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(history),
+    });
+
+    await expect(fetchHistory('wallet/with space', 50)).resolves.toEqual(history);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/history?pubkey=wallet%2Fwith%20space&limit=50`,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-api-key': expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it('fetchHistory includes cursor params when provided', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({ messages: [] }),
+    });
+
+    await fetchHistory('wallet-1', 25, 1700000000000, 'msg/with space');
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/history?pubkey=wallet-1&limit=25&beforeTs=1700000000000&beforeId=msg%2Fwith%20space`,
+      expect.any(Object),
+    );
+  });
+
+  it('fetchHistory throws with status when request fails', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 404 });
+
+    await expect(fetchHistory('wallet-1', 50)).rejects.toThrow('History fetch failed: 404');
+  });
+
+  it('fetchHistory rejects when beforeId is provided without beforeTs', async () => {
+    await expect(fetchHistory('wallet-1', 50, undefined, 'msg-1')).rejects.toThrow(
+      'Invalid history cursor: beforeTs is required when beforeId is provided',
+    );
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
   it('getSSEUrl builds stream url from api base', () => {

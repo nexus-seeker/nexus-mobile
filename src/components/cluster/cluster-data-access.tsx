@@ -30,7 +30,7 @@ export function toWalletAdapterNetwork(
   }
 }
 
-export const defaultClusters: Readonly<Cluster[]> = [
+export const defaultClusters: readonly Cluster[] = [
   {
     name: "devnet",
     endpoint: clusterApiUrl("devnet"),
@@ -58,19 +58,18 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
   const [selectedCluster, setSelectedCluster] = useState<Cluster>(
     defaultClusters[0]
   );
-  const clusters = [...defaultClusters];
 
   const value: ClusterProviderContext = useMemo(
     () => ({
       selectedCluster,
-      clusters: clusters.sort((a, b) => (a.name > b.name ? 1 : -1)),
+      clusters: [...defaultClusters].sort((a, b) => (a.name > b.name ? 1 : -1)),
       setSelectedCluster: (cluster: Cluster) => setSelectedCluster(cluster),
       getExplorerUrl: (path: string) =>
         `https://explorer.solana.com/${path}${getClusterUrlParam(
           selectedCluster
         )}`,
     }),
-    [clusters, selectedCluster]
+    [selectedCluster]
   );
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }

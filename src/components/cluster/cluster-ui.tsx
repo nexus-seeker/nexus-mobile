@@ -1,7 +1,7 @@
 import { View, StyleSheet, Pressable } from "react-native";
 import { Text } from "../ui";
 import { Cluster } from "./cluster-data-access";
-import { colors, spacing } from "../../theme/shadcn-theme";
+import { colors } from "../../theme/shadcn-theme";
 
 interface ClusterPickerRadioButtonGroupRowProps {
   cluster: Cluster;

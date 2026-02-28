@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthorization } from '../utils/useAuthorization';
 import { fetchReceipts, type ReceiptDto } from '../services/agent/agent-api';
-import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
+import { colors, spacing, radii, typography } from '../theme/shadcn-theme';
 
 // Status Badge Component
 function StatusBadge({ status }: { status: string }) {
@@ -167,7 +167,6 @@ export function HistoryScreen() {
     queryKey: ['receipts', pubkey],
     queryFn: () => fetchReceipts(pubkey!),
     enabled: !!pubkey,
-    refetchInterval: 10_000,
   });
 
   if (!pubkey) {
@@ -191,7 +190,7 @@ export function HistoryScreen() {
     return (
       <View style={styles.centered}>
         <ActivityIndicator animating color={colors.primary} size="large" />
-        <Text style={styles.loadingText}>Loading receipts...</Text>
+        <Text style={styles.loadingText}>Loading cached receipts...</Text>
       </View>
     );
   }
@@ -228,7 +227,7 @@ export function HistoryScreen() {
           <MaterialCommunityIcons name="history" size={32} color={colors.foreground} />
           <Text style={styles.headerTitle}>Transaction History</Text>
           <Text style={styles.headerSubtitle}>
-            {receipts?.length || 0} transactions
+            {receipts?.length || 0} cached receipts
           </Text>
         </View>
       </LinearGradient>

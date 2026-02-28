@@ -57,6 +57,25 @@ export interface ReceiptDto {
   timestamp: number;
 }
 
+export interface MessageDto {
+  id: string;
+  role: string;
+  content: string;
+  runId: string;
+  steps?: unknown[];
+  rejection?: {
+    reason: string;
+    policyField: string;
+  };
+  timestamp: number;
+}
+
+export interface HistoryResponseDto {
+  messages: MessageDto[];
+  nextCursor?: number;
+  nextCursorId?: string;
+}
+
 function normalizeStreamEvent(rawEvent: unknown): StepEvent {
   const event = rawEvent as StepEvent & { step?: Partial<StepEvent> };
 
@@ -309,6 +328,38 @@ export async function fetchReceipts(pubkey: string): Promise<ReceiptDto[]> {
 
   const data = await response.json();
   return data.receipts;
+}
+
+export async function fetchHistory(
+  pubkey: string,
+  limit: number,
+  beforeTs?: number,
+  beforeId?: string,
+): Promise<HistoryResponseDto> {
+  if (beforeId !== undefined && beforeTs === undefined) {
+    throw new Error('Invalid history cursor: beforeTs is required when beforeId is provided');
+  }
+
+  const params = [
+    `pubkey=${encodeURIComponent(pubkey)}`,
+    `limit=${encodeURIComponent(String(limit))}`,
+  ];
+
+  if (beforeTs !== undefined) {
+    params.push(`beforeTs=${encodeURIComponent(String(beforeTs))}`);
+  }
+
+  if (beforeId !== undefined) {
+    params.push(`beforeId=${encodeURIComponent(beforeId)}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/history?${params.join('&')}`, { headers });
+
+  if (!response.ok) {
+    throw new Error(`History fetch failed: ${response.status}`);
+  }
+
+  return response.json();
 }
 
 export function getSSEUrl(runId: string): string {

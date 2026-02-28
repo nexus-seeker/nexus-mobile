@@ -1,11 +1,5 @@
-import {
-  DarkTheme as NavigationDarkTheme,
-  DefaultTheme as NavigationDefaultTheme,
-  NavigationContainer,
-} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
-import { useColorScheme } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { WalletConnectScreen } from "../screens/WalletConnectScreen";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
@@ -40,6 +34,7 @@ export type RootStackParamList = {
 
 declare global {
   namespace ReactNavigation {
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     interface RootParamList extends RootStackParamList { }
   }
 }
@@ -87,18 +82,11 @@ const AppStack = () => {
   );
 };
 
-export interface NavigationProps
-  extends Partial<React.ComponentProps<typeof NavigationContainer>> { }
-
-export const AppNavigator = (props: NavigationProps) => {
-  const colorScheme = useColorScheme();
-  const theme =
-    colorScheme === "dark" ? NavigationDarkTheme : NavigationDefaultTheme;
-
+export const AppNavigator = () => {
   return (
-    <NavigationContainer theme={theme} {...props}>
+    <>
       <StatusBar />
       <AppStack />
-    </NavigationContainer>
+    </>
   );
 };

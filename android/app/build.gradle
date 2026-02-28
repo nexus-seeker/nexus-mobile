@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.nexusseeker.nexusmobile'
+    namespace 'com.benelabs.kawula'
     defaultConfig {
-        applicationId 'com.nexusseeker.nexusmobile'
+        applicationId 'com.benelabs.kawula'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

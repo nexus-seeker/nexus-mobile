@@ -7,7 +7,6 @@ import {
   AuthToken,
   Base64EncodedAddress,
   DeauthorizeAPI,
-  SignInPayloadWithRequiredFields,
   SignInPayload,
 } from "@solana-mobile/mobile-wallet-adapter-protocol";
 import { toUint8Array } from "js-base64";
@@ -125,7 +124,7 @@ export function useAuthorization() {
       await setAuthorization(nextAuthorization);
       return nextAuthorization;
     },
-    [authorization]
+    [authorization, setAuthorization]
   );
   const authorizeSession = useCallback(
     async (wallet: AuthorizeAPI) => {
@@ -160,7 +159,7 @@ export function useAuthorization() {
       await wallet.deauthorize({ auth_token: authorization.authToken });
       await setAuthorization(null);
     },
-    [authorization]
+    [authorization, setAuthorization]
   );
   return useMemo(
     () => ({
