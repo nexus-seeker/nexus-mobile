@@ -65,45 +65,59 @@ export function SettingsScreen() {
   }, []);
 
   const loadPlayerId = async () => {
-    const id = await getPlayerId();
-    setPlayerId(id);
+    try {
+      const id = await getPlayerId();
+      setPlayerId(id);
+    } catch (err) {
+      console.error('Failed to load player ID:', err);
+    }
   };
 
   const handleMasterToggle = async (value: boolean) => {
-    if (value) {
-      // Trying to enable
-      const hasPermission = await checkPermissionStatus();
+    try {
+      if (value) {
+        // Trying to enable
+        const hasPermission = await checkPermissionStatus();
 
-      if (!hasPermission) {
-        const granted = await requestPermission();
-        if (!granted) {
-          Alert.alert(
-            'Permission Required',
-            'Please enable notifications in system settings.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Open Settings',
-                onPress: () => Linking.openSettings(),
-              },
-            ]
-          );
+        if (!hasPermission) {
+          const granted = await requestPermission();
+          if (!granted) {
+            Alert.alert(
+              'Permission Required',
+              'Please enable notifications in system settings.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Open Settings',
+                  onPress: () => Linking.openSettings(),
+                },
+              ]
+            );
+          }
+        } else {
+          OneSignal.disablePush(false);
+          await updatePreferences({ pushEnabled: true });
         }
       } else {
-        OneSignal.disablePush(false);
-        await updatePreferences({ pushEnabled: true });
+        // Disabling
+        OneSignal.disablePush(true);
+        await updatePreferences({ pushEnabled: false });
       }
-    } else {
-      // Disabling
-      OneSignal.disablePush(true);
-      await updatePreferences({ pushEnabled: false });
+    } catch (err) {
+      console.error('Failed to update notification settings:', err);
+      Alert.alert('Error', 'Failed to update notification settings');
     }
   };
 
   const copyPlayerId = async () => {
-    if (playerId) {
-      await Clipboard.setStringAsync(playerId);
-      Alert.alert('Copied!', 'Player ID copied to clipboard');
+    try {
+      if (playerId) {
+        await Clipboard.setStringAsync(playerId);
+        Alert.alert('Copied!', 'Player ID copied to clipboard');
+      }
+    } catch (err) {
+      console.error('Failed to copy player ID:', err);
+      Alert.alert('Error', 'Failed to copy to clipboard');
     }
   };
 
