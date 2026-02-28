@@ -20,7 +20,8 @@ describe("evaluatePolicy", () => {
   it("requires approval when protocol is not whitelisted", () => {
     const action: PolicyAction = {
       amountSol: 0.05,
-      protocol: "SPL_TRANSFER",
+      // RAYDIUM is not in DEFAULT_POLICY.allowedProtocols
+      protocol: "RAYDIUM" as any,
     };
 
     const result = evaluatePolicy(DEFAULT_POLICY, action);

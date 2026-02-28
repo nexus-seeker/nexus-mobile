@@ -86,6 +86,7 @@ describe('ChatScreen approval flow', () => {
         unsignedTx: 'dGVzdA==',
       },
       confirmedSig: null,
+      agentMessage: null,
       error: null,
       executeIntent,
       approveTransaction,
@@ -113,12 +114,13 @@ describe('ChatScreen approval flow', () => {
     expect(approveTransaction).toHaveBeenCalledTimes(1);
   });
 
-  it('shows payroll-first suggestion chips while idle', () => {
+  it('shows suggestion chips while idle', () => {
     (useAgentRun as jest.Mock).mockReturnValue({
       runState: 'idle',
       steps: [],
       result: null,
       confirmedSig: null,
+      agentMessage: null,
       error: null,
       executeIntent,
       approveTransaction,
@@ -127,8 +129,8 @@ describe('ChatScreen approval flow', () => {
 
     const { getByText } = render(<ChatScreen />);
 
-    expect(getByText('Pay alice.skr 500 USDC, bob.skr 300 USDC')).toBeTruthy();
-    expect(getByText('Run payroll for 5 contractors in USDC')).toBeTruthy();
+    expect(getByText('Analyze my wallet activity')).toBeTruthy();
+    expect(getByText('Stake 0.5 SOL via Marinade')).toBeTruthy();
   });
 
   it('shows payroll policy guidance copy when run is rejected by limits', () => {
@@ -144,6 +146,7 @@ describe('ChatScreen approval flow', () => {
         },
       },
       confirmedSig: null,
+      agentMessage: null,
       error: 'Per-recipient amount exceeds policy limit',
       executeIntent,
       approveTransaction,
@@ -170,6 +173,7 @@ describe('ChatScreen approval flow', () => {
         },
       },
       confirmedSig: null,
+      agentMessage: null,
       error: 'Jupiter API error: InvalidProgramForExecution',
       executeIntent,
       approveTransaction,

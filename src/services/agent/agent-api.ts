@@ -19,6 +19,8 @@ export interface AgentRunResult {
   runId: string;
   steps: StepEvent[];
   unsignedTx?: string;
+  /** Conversational reply from the agent (analysis intents — no tx required) */
+  agentMessage?: string;
   rejection?: {
     reason: string;
     policyField: string;
