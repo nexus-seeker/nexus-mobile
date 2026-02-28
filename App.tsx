@@ -1,6 +1,7 @@
 // Polyfills
 import "./src/polyfills";
 
+import { useRef } from "react";
 import { StyleSheet, useColorScheme, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAppFonts } from "./src/theme/fonts";
@@ -10,16 +11,26 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
+  NavigationContainer,
+  NavigationContainerRef,
 } from "@react-navigation/native";
 import { AppNavigator } from "./src/navigators/AppNavigator";
 import { ClusterProvider } from "./src/components/cluster/cluster-data-access";
 import { PolicyProvider } from "./src/contexts/PolicyContext";
+import { initializePushNotifications, setNotificationNavigationRef } from "./src/services/pushNotifications";
+import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 export default function App() {
   const { fontsLoaded, fontError } = useAppFonts();
   const colorScheme = useColorScheme();
+  const navigationRef = useRef<NavigationContainerRef<any>>(null);
+
+  useEffect(() => {
+    setNotificationNavigationRef(navigationRef.current);
+    initializePushNotifications();
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return (
@@ -41,7 +52,9 @@ export default function App() {
             ]}
           >
             <PolicyProvider>
-              <AppNavigator />
+              <NavigationContainer ref={navigationRef} theme={theme}>
+                <AppNavigator />
+              </NavigationContainer>
             </PolicyProvider>
           </SafeAreaView>
         </ConnectionProvider>
