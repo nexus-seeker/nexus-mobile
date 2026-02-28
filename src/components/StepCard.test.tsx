@@ -43,4 +43,52 @@ describe('StepCard', () => {
 
     expect(getByText('•')).toBeTruthy();
   });
+
+  it('uses payload.order for unknown nodes when provided', () => {
+    const step: StepEvent = {
+      type: 'step',
+      node: 'dynamic_backend_node',
+      label: 'Dynamic ordered step',
+      status: 'running',
+      payload: {
+        order: 4,
+      },
+    };
+
+    const { getByText } = render(<StepCard step={step} index={0} />);
+
+    expect(getByText('④')).toBeTruthy();
+  });
+
+  it('uses payload.stepIndex for unknown nodes when provided', () => {
+    const step: StepEvent = {
+      type: 'step',
+      node: 'another_dynamic_node',
+      label: 'Dynamic indexed step',
+      status: 'running',
+      payload: {
+        stepIndex: 5,
+      },
+    };
+
+    const { getByText } = render(<StepCard step={step} index={0} />);
+
+    expect(getByText('⑥')).toBeTruthy();
+  });
+
+  it('keeps bullet fallback for unknown nodes without ordering metadata', () => {
+    const step: StepEvent = {
+      type: 'step',
+      node: 'unknown_without_order',
+      label: 'Unknown without metadata',
+      status: 'success',
+      payload: {
+        note: 'no order metadata',
+      },
+    };
+
+    const { getByText } = render(<StepCard step={step} index={0} />);
+
+    expect(getByText('•')).toBeTruthy();
+  });
 });
