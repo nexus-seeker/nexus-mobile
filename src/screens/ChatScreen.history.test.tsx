@@ -138,4 +138,16 @@ describe('ChatScreen history hydration', () => {
     expect(queryByText('PERSISTED HISTORY')).toBeNull();
     expect(queryByText('Old persisted prompt')).toBeNull();
   });
+
+  it('does not show idle empty state while persisted history is still loading', () => {
+    (useHistory as jest.Mock).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+
+    const { queryByText } = render(<ChatScreen />);
+
+    expect(queryByText('NEXUS is ready.')).toBeNull();
+  });
 });

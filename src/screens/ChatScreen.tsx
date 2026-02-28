@@ -55,6 +55,18 @@ function StatusIndicator({ status }: { status: string }) {
   );
 }
 
+function getHistoryRoleLabel(role: string): string {
+  if (role === 'user') {
+    return 'YOU';
+  }
+
+  if (role === 'agent' || role === 'assistant') {
+    return 'AGENT';
+  }
+
+  return role.toUpperCase();
+}
+
 export function ChatScreen() {
   const { selectedAccount, authorizeSession } = useAuthorization();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -73,10 +85,18 @@ export function ChatScreen() {
   } = useAgentRun();
 
   const pubkey = selectedAccount?.publicKey.toBase58();
-  const { data: historyData } = useHistory(pubkey);
+  const { data: historyData, isLoading: isHistoryLoading } = useHistory(pubkey);
   const historyMessages = historyData?.messages ?? [];
-  const shouldShowPersistedHistory = runState === 'idle' && steps.length === 0;
-  const persistedHistoryPreview = historyMessages.slice(0, 8);
+  const shouldShowPersistedHistory = !isHistoryLoading && runState === 'idle' && steps.length === 0;
+  const persistedHistoryPreview = [...historyMessages]
+    .sort((a, b) => {
+      if (a.timestamp !== b.timestamp) {
+        return b.timestamp - a.timestamp;
+      }
+      return b.id.localeCompare(a.id);
+    })
+    .slice(0, 8)
+    .reverse();
   const shortPubkey = pubkey
     ? `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}.skr`
     : 'Not connected';
@@ -180,9 +200,7 @@ export function ChatScreen() {
             <View style={styles.historyMessagesContainer}>
               {persistedHistoryPreview.map((message) => (
                 <View key={message.id} style={styles.historyMessageRow}>
-                  <Text style={styles.historyRoleLabel}>
-                    {message.role === 'user' ? 'YOU' : 'AGENT'}
-                  </Text>
+                  <Text style={styles.historyRoleLabel}>{getHistoryRoleLabel(message.role)}</Text>
                   <Text>{message.content}</Text>
                 </View>
               ))}
@@ -279,7 +297,7 @@ export function ChatScreen() {
         )}
 
         {/* Empty State */}
-        {steps.length === 0 && runState === 'idle' && historyMessages.length === 0 && (
+        {steps.length === 0 && runState === 'idle' && !isHistoryLoading && historyMessages.length === 0 && (
           <View style={styles.emptyState}>
             <View style={styles.emptyStateOrb}>
               <MaterialCommunityIcons name="brain" size={40} color={colors.primaryLight} />
