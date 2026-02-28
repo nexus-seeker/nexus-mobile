@@ -137,6 +137,7 @@ describe('ChatScreen history hydration', () => {
     expect(await findByText('LIVE STEP 1: planner (running)')).toBeTruthy();
     expect(queryByText('PERSISTED HISTORY')).toBeNull();
     expect(queryByText('Old persisted prompt')).toBeNull();
+    expect(queryByText('YOU')).toBeNull();
   });
 
   it('does not show idle empty state while persisted history is still loading', () => {
