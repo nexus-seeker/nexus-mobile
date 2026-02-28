@@ -1,4 +1,4 @@
-import OneSignal from 'react-native-onesignal';
+import { OneSignal, NotificationWillDisplayEvent, NotificationClickEvent } from 'react-native-onesignal';
 import { getRouteForNotification, validateDeepLink } from './notifications/router';
 import { getPreferences, savePreferences } from './notifications/storage';
 import { NotificationCategory, ANDROID_CHANNELS } from './notifications/types';
@@ -14,22 +14,21 @@ export const setNotificationNavigationRef = (ref: any) => {
 export const initializePushNotifications = async () => {
   try {
     // Initialize OneSignal
-    OneSignal.setAppId(ONE_SIGNAL_APP_ID);
+    OneSignal.initialize(ONE_SIGNAL_APP_ID);
 
     // Load saved preferences
     const prefs = await getPreferences();
 
     // Apply saved settings
     if (!prefs.pushEnabled) {
-      OneSignal.disablePush(true);
+      OneSignal.User.pushSubscription.optOut();
     }
 
     // Set up notification handlers
     setupNotificationHandlers();
 
     // Sync permission status
-    const deviceState = await OneSignal.getDeviceState();
-    const hasPermission = deviceState?.hasNotificationPermission ?? false;
+    const hasPermission = await OneSignal.Notifications.getPermissionAsync();
 
     if (prefs.permissionStatus === 'granted' && !hasPermission) {
       // User revoked permission in system settings
@@ -49,25 +48,23 @@ export const initializePushNotifications = async () => {
 
 const setupNotificationHandlers = () => {
   // Handle received notifications while app is in foreground
-  OneSignal.setNotificationWillShowInForegroundHandler(
-    (notificationReceivedEvent) => {
-      const notification = notificationReceivedEvent.getNotification();
-      console.log('[PushNotifications] Received in foreground:', notification);
+  OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event: NotificationWillDisplayEvent) => {
+    const notification = event.notification;
+    console.log('[PushNotifications] Received in foreground:', notification);
 
-      // You can choose to show or suppress based on category
-      const category = notification.additionalData?.category;
-      if (category === NotificationCategory.MARKETING) {
-        // Suppress marketing notifications in foreground
-        notificationReceivedEvent.complete(null);
-      } else {
-        notificationReceivedEvent.complete(notification);
-      }
+    // You can choose to show or suppress based on category
+    const additionalData = notification.additionalData as { category?: string } | undefined;
+    const category = additionalData?.category;
+    if (category === NotificationCategory.MARKETING) {
+      // Suppress marketing notifications in foreground
+      event.preventDefault();
     }
-  );
+    // If not prevented, notification will display by default
+  });
 
   // Handle opened notifications
-  OneSignal.setNotificationOpenedHandler((openedEvent) => {
-    const { notification } = openedEvent;
+  OneSignal.Notifications.addEventListener('click', (event: NotificationClickEvent) => {
+    const { notification } = event;
     console.log('[PushNotifications] Opened:', notification);
 
     handleNotificationTap(notification);
@@ -126,40 +123,42 @@ const handleNotificationTap = (notification: any) => {
   // });
 };
 
-export const requestPushPermission = (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    OneSignal.promptForPushNotificationsWithUserResponse(async (response) => {
-      await savePreferences({
-        pushEnabled: response,
-        permissionStatus: response ? 'granted' : 'denied',
-        lastPromptedAt: Date.now(),
-      });
-      resolve(response);
-    });
+export const requestPushPermission = async (): Promise<boolean> => {
+  const response = await OneSignal.Notifications.requestPermission(true);
+  const currentPrefs = await getPreferences();
+  await savePreferences({
+    ...currentPrefs,
+    pushEnabled: response,
+    permissionStatus: response ? 'granted' : 'denied',
+    lastPromptedAt: Date.now(),
   });
+  return response;
 };
 
 export const getOneSignalPlayerId = async (): Promise<string | null> => {
-  const deviceState = await OneSignal.getDeviceState();
-  return deviceState?.userId || null;
+  return await OneSignal.User.pushSubscription.getIdAsync();
 };
 
 export const setExternalUserId = (userId: string) => {
-  OneSignal.setExternalUserId(userId);
+  OneSignal.login(userId);
 };
 
 export const removeExternalUserId = () => {
-  OneSignal.removeExternalUserId();
+  OneSignal.logout();
 };
 
 export const disablePushNotifications = (disable: boolean) => {
-  OneSignal.disablePush(disable);
+  if (disable) {
+    OneSignal.User.pushSubscription.optOut();
+  } else {
+    OneSignal.User.pushSubscription.optIn();
+  }
 };
 
 export const sendTag = (key: string, value: string) => {
-  OneSignal.sendTag(key, value);
+  OneSignal.User.addTag(key, value);
 };
 
 export const deleteTag = (key: string) => {
-  OneSignal.deleteTag(key);
+  OneSignal.User.removeTag(key);
 };

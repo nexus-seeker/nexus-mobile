@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import OneSignal from 'react-native-onesignal';
+import { OneSignal } from 'react-native-onesignal';
 import { getPreferences, savePreferences, getDefaultPreferences } from '../services/notifications/storage';
 import { NotificationPreferences } from '../services/notifications/types';
 
@@ -43,8 +43,7 @@ export const useNotifications = () => {
   );
 
   const checkPermissionStatus = useCallback(async () => {
-    const deviceState = await OneSignal.getDeviceState();
-    const hasPermission = deviceState?.hasNotificationPermission ?? false;
+    const hasPermission = await OneSignal.Notifications.getPermissionAsync();
 
     const newStatus = hasPermission ? 'granted' : 'denied';
     if (prefs.permissionStatus !== newStatus) {
@@ -55,17 +54,14 @@ export const useNotifications = () => {
   }, [prefs.permissionStatus, updatePreferences]);
 
   const requestPermission = useCallback(async () => {
-    return new Promise<boolean>((resolve) => {
-      OneSignal.promptForPushNotificationsWithUserResponse((response) => {
-        const status = response ? 'granted' : 'denied';
-        updatePreferences({
-          permissionStatus: status,
-          pushEnabled: response,
-          lastPromptedAt: Date.now(),
-        });
-        resolve(response);
-      });
+    const response = await OneSignal.Notifications.requestPermission(true);
+    const status = response ? 'granted' : 'denied';
+    await updatePreferences({
+      permissionStatus: status,
+      pushEnabled: response,
+      lastPromptedAt: Date.now(),
     });
+    return response;
   }, [updatePreferences]);
 
   const toggleCategory = useCallback(
@@ -77,8 +73,7 @@ export const useNotifications = () => {
   );
 
   const getPlayerId = useCallback(async () => {
-    const deviceState = await OneSignal.getDeviceState();
-    const playerId = deviceState?.userId || null;
+    const playerId = await OneSignal.User.pushSubscription.getIdAsync();
     if (playerId !== prefs.playerId) {
       await updatePreferences({ playerId });
     }

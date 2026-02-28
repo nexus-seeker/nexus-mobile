@@ -13,9 +13,9 @@ describe('Notification Router', () => {
 
       const route = getRouteForNotification(notification);
 
-      expect(route.screen).toBe('TransactionDetail');
-      expect(route.params).toEqual({ type: 'received' });
-      expect(route.modal).toBe(true);
+      expect(route!.screen).toBe('TransactionDetail');
+      expect(route!.params).toEqual({ type: 'received' });
+      expect(route!.modal).toBe(true);
     });
 
     it('routes chat_message to Chat screen', () => {
@@ -28,8 +28,8 @@ describe('Notification Router', () => {
 
       const route = getRouteForNotification(notification);
 
-      expect(route.screen).toBe('Chat');
-      expect(route.params).toEqual({ navigateToConversation: true });
+      expect(route!.screen).toBe('Chat');
+      expect(route!.params).toEqual({ navigateToConversation: true });
     });
 
     it('returns null for unknown action', () => {

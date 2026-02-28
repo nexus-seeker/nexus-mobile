@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "709155056447",
+    "project_id": "kawula-seeker",
+    "storage_bucket": "kawula-seeker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:709155056447:android:950682abd09d9843fdc18a",
+        "android_client_info": {
+          "package_name": "com.benelabs.kawula"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLWQ408O-2tMnFNMlZZBNpyo6_a4_1meg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

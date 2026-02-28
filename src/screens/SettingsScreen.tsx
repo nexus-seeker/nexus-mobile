@@ -9,7 +9,7 @@ import {
   ScrollView,
   Linking,
 } from 'react-native';
-import OneSignal from 'react-native-onesignal';
+import { OneSignal } from 'react-native-onesignal';
 import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import ClusterPickerFeature from '../components/cluster/cluster-picker-feature';
@@ -95,12 +95,12 @@ export function SettingsScreen() {
             );
           }
         } else {
-          OneSignal.disablePush(false);
+          OneSignal.User.pushSubscription.optIn();
           await updatePreferences({ pushEnabled: true });
         }
       } else {
         // Disabling
-        OneSignal.disablePush(true);
+        OneSignal.User.pushSubscription.optOut();
         await updatePreferences({ pushEnabled: false });
       }
     } catch (err) {
