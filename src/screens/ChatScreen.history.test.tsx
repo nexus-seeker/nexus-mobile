@@ -39,7 +39,10 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 jest.mock('../components/StepCard', () => ({
-  StepCard: () => null,
+  StepCard: ({ step, index }: { step: { node: string; status: string }; index: number }) => {
+    const { Text } = require('react-native');
+    return <Text>{`LIVE STEP ${index + 1}: ${step.node} (${step.status})`}</Text>;
+  },
 }));
 
 jest.mock('../components/ApprovalSheet', () => ({
@@ -97,5 +100,42 @@ describe('ChatScreen history hydration', () => {
 
     expect(await findByText('Bridge 0.2 SOL into wrapped stake account')).toBeTruthy();
     expect(await findByText('Routing through Jupiter and preparing the transaction.')).toBeTruthy();
+    expect(await findByText('YOU')).toBeTruthy();
+    expect(await findByText('AGENT')).toBeTruthy();
+  });
+
+  it('suppresses persisted history while a live run is active so live steps stay prioritized', async () => {
+    (useAgentRun as jest.Mock).mockReturnValue({
+      runState: 'running',
+      steps: [{ node: 'planner', status: 'running' }],
+      result: null,
+      confirmedSig: null,
+      error: null,
+      executeIntent: jest.fn(),
+      approveTransaction: jest.fn(),
+      resetRun: jest.fn(),
+    });
+
+    (useHistory as jest.Mock).mockReturnValue({
+      data: {
+        messages: [
+          {
+            id: 'm1',
+            role: 'user',
+            content: 'Old persisted prompt',
+            runId: 'run-0',
+            timestamp: 1,
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    });
+
+    const { findByText, queryByText } = render(<ChatScreen />);
+
+    expect(await findByText('LIVE STEP 1: planner (running)')).toBeTruthy();
+    expect(queryByText('PERSISTED HISTORY')).toBeNull();
+    expect(queryByText('Old persisted prompt')).toBeNull();
   });
 });

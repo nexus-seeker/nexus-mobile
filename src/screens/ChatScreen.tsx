@@ -75,6 +75,8 @@ export function ChatScreen() {
   const pubkey = selectedAccount?.publicKey.toBase58();
   const { data: historyData } = useHistory(pubkey);
   const historyMessages = historyData?.messages ?? [];
+  const shouldShowPersistedHistory = runState === 'idle' && steps.length === 0;
+  const persistedHistoryPreview = historyMessages.slice(0, 8);
   const shortPubkey = pubkey
     ? `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}.skr`
     : 'Not connected';
@@ -169,14 +171,14 @@ export function ChatScreen() {
           </View>
         )}
 
-        {historyMessages.length > 0 && (
+        {shouldShowPersistedHistory && persistedHistoryPreview.length > 0 && (
           <Card style={styles.historyCard}>
             <View style={styles.agentCardHeader}>
               <MaterialCommunityIcons name="history" size={18} color={colors.primaryLight} />
               <Text style={styles.agentLabel}>PERSISTED HISTORY</Text>
             </View>
             <View style={styles.historyMessagesContainer}>
-              {historyMessages.map((message) => (
+              {persistedHistoryPreview.map((message) => (
                 <View key={message.id} style={styles.historyMessageRow}>
                   <Text style={styles.historyRoleLabel}>
                     {message.role === 'user' ? 'YOU' : 'AGENT'}
