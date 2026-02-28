@@ -279,7 +279,7 @@ describe('openAgentStream', () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it('normalizes envelope-shaped step events to flat step fields', () => {
+  it('normalizes envelope-shaped step events to flat step fields for dynamic tool nodes', () => {
     const source = {
       onmessage: null as ((event: { data?: string }) => void) | null,
       onerror: null as (() => void) | null,
@@ -299,18 +299,114 @@ describe('openAgentStream', () => {
       data: JSON.stringify({
         type: 'step',
         step: {
-          node: 'parse_intent',
-          label: 'Parsing intent',
-          status: 'running',
-        },
+           node: 'multi_send_usdc',
+           label: 'Preparing multi-send',
+           status: 'running',
+         },
+       }),
+     });
+
+     expect(onEvent).toHaveBeenCalledWith({
+       type: 'step',
+       node: 'multi_send_usdc',
+       label: 'Preparing multi-send',
+       status: 'running',
+     });
+  });
+
+  it('forwards unknown node names untouched', () => {
+    const source = {
+      onmessage: null as ((event: { data?: string }) => void) | null,
+      onerror: null as (() => void) | null,
+      close: jest.fn(),
+    };
+
+    (globalThis as any).EventSource = jest.fn(() => source);
+
+    const onEvent = jest.fn();
+
+    openAgentStream('run-unknown-node', {
+      onEvent,
+      onError: jest.fn(),
+    });
+
+    source.onmessage?.({
+      data: JSON.stringify({
+        type: 'step',
+        node: 'vendor_custom_node',
+        label: 'Custom node',
+        status: 'running',
       }),
     });
 
     expect(onEvent).toHaveBeenCalledWith({
       type: 'step',
-      node: 'parse_intent',
-      label: 'Parsing intent',
+      node: 'vendor_custom_node',
+      label: 'Custom node',
       status: 'running',
+    });
+  });
+
+  it('accepts complete.result.steps with dynamic nodes from envelope and flat step shapes', () => {
+    const source = {
+      onmessage: null as ((event: { data?: string }) => void) | null,
+      onerror: null as (() => void) | null,
+      close: jest.fn(),
+    };
+
+    (globalThis as any).EventSource = jest.fn(() => source);
+
+    const onEvent = jest.fn();
+
+    openAgentStream('run-complete-steps', {
+      onEvent,
+      onError: jest.fn(),
+    });
+
+    source.onmessage?.({
+      data: JSON.stringify({
+        type: 'complete',
+        result: {
+          runId: 'run-complete-steps',
+          steps: [
+            {
+              type: 'step',
+              step: {
+                node: 'multi_send_usdc',
+                label: 'Preparing multi-send',
+                status: 'success',
+              },
+            },
+            {
+              type: 'step',
+              node: 'planner_custom_node',
+              label: 'Custom planner node',
+              status: 'success',
+            },
+          ],
+        },
+      }),
+    });
+
+    expect(onEvent).toHaveBeenCalledWith({
+      type: 'complete',
+      result: {
+        runId: 'run-complete-steps',
+        steps: [
+          {
+            type: 'step',
+            node: 'multi_send_usdc',
+            label: 'Preparing multi-send',
+            status: 'success',
+          },
+          {
+            type: 'step',
+            node: 'planner_custom_node',
+            label: 'Custom planner node',
+            status: 'success',
+          },
+        ],
+      },
     });
   });
 

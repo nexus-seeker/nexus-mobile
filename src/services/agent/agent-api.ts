@@ -76,7 +76,7 @@ export interface HistoryResponseDto {
   nextCursorId?: string;
 }
 
-function normalizeStreamEvent(rawEvent: unknown): StepEvent {
+function flattenStepEnvelope(rawEvent: unknown): StepEvent {
   const event = rawEvent as StepEvent & { step?: Partial<StepEvent> };
 
   if (event?.type !== 'step' || !event.step) {
@@ -91,6 +91,22 @@ function normalizeStreamEvent(rawEvent: unknown): StepEvent {
 
   delete (normalized as { step?: Partial<StepEvent> }).step;
   return normalized;
+}
+
+function normalizeStreamEvent(rawEvent: unknown): StepEvent {
+  const event = flattenStepEnvelope(rawEvent);
+
+  if (event?.type !== 'complete' || !event.result || !Array.isArray(event.result.steps)) {
+    return event;
+  }
+
+  return {
+    ...event,
+    result: {
+      ...event.result,
+      steps: event.result.steps.map((step) => flattenStepEnvelope(step)),
+    },
+  };
 }
 
 const headers = {
