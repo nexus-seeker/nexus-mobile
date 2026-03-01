@@ -97,6 +97,9 @@ export function PolicyScreen() {
   const [allowedMarinade, setAllowedMarinade] = useState(
     policy.allowedProtocols.includes("MARINADE")
   );
+  const [allowedMarginfi, setAllowedMarginfi] = useState(
+    policy.allowedProtocols.includes("MARGINFI")
+  );
   const [isActive, setIsActive] = useState(policy.isActive ?? true);
   const [lastSuccess, setLastSuccess] = useState<string | null>(null);
 
@@ -109,6 +112,7 @@ export function PolicyScreen() {
       setAllowedTransfers(policy.allowedProtocols.includes("SPL_TRANSFER"));
       setAllowedMultiSend(policy.allowedProtocols.includes("MULTI_SEND"));
       setAllowedMarinade(policy.allowedProtocols.includes("MARINADE"));
+      setAllowedMarginfi(policy.allowedProtocols.includes("MARGINFI"));
       setIsActive(policy.isActive ?? true);
     }, 0);
     return () => clearTimeout(timeoutId);
@@ -145,6 +149,10 @@ export function PolicyScreen() {
 
     if (allowedMarinade) {
       allowedProtocols.push("MARINADE");
+    }
+
+    if (allowedMarginfi) {
+      allowedProtocols.push("MARGINFI");
     }
 
     const result = await savePolicy({
@@ -264,6 +272,14 @@ export function PolicyScreen() {
           subtitle="Liquid stake SOL → mSOL via Marinade Finance"
           value={allowedMarinade}
           onValueChange={setAllowedMarinade}
+        />
+
+        <ToggleRow
+          icon="bank-transfer"
+          title="Marginfi Lending"
+          subtitle="Deposit SOL or USDC to earn lending yield"
+          value={allowedMarginfi}
+          onValueChange={setAllowedMarginfi}
         />
 
         {/* Kill Switch */}

@@ -1,4 +1,4 @@
-export type PolicyProtocol = "JUPITER" | "SPL_TRANSFER" | "MULTI_SEND" | "MARINADE";
+export type PolicyProtocol = "JUPITER" | "SPL_TRANSFER" | "MULTI_SEND" | "MARINADE" | "MARGINFI";
 
 export type PolicyState = {
   dailyLimitSol: number;
@@ -22,7 +22,7 @@ export type PolicyEvaluation = {
 export const DEFAULT_POLICY: PolicyState = {
   dailyLimitSol: 0.5,
   dailySpentSol: 0,
-  allowedProtocols: ["JUPITER", "SPL_TRANSFER", "MULTI_SEND", "MARINADE"],
+  allowedProtocols: ["JUPITER", "SPL_TRANSFER", "MULTI_SEND", "MARINADE", "MARGINFI"],
   isActive: true,
 };
 
