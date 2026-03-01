@@ -91,6 +91,12 @@ export function PolicyScreen() {
   const [allowedTransfers, setAllowedTransfers] = useState(
     policy.allowedProtocols.includes("SPL_TRANSFER")
   );
+  const [allowedMultiSend, setAllowedMultiSend] = useState(
+    policy.allowedProtocols.includes("MULTI_SEND")
+  );
+  const [allowedMarinade, setAllowedMarinade] = useState(
+    policy.allowedProtocols.includes("MARINADE")
+  );
   const [isActive, setIsActive] = useState(policy.isActive ?? true);
   const [lastSuccess, setLastSuccess] = useState<string | null>(null);
 
@@ -101,6 +107,8 @@ export function PolicyScreen() {
       setDailyLimitSol(String(policy.dailyLimitSol));
       setAllowedJupiter(policy.allowedProtocols.includes("JUPITER"));
       setAllowedTransfers(policy.allowedProtocols.includes("SPL_TRANSFER"));
+      setAllowedMultiSend(policy.allowedProtocols.includes("MULTI_SEND"));
+      setAllowedMarinade(policy.allowedProtocols.includes("MARINADE"));
       setIsActive(policy.isActive ?? true);
     }, 0);
     return () => clearTimeout(timeoutId);
@@ -129,6 +137,14 @@ export function PolicyScreen() {
 
     if (allowedTransfers) {
       allowedProtocols.push("SPL_TRANSFER");
+    }
+
+    if (allowedMultiSend) {
+      allowedProtocols.push("MULTI_SEND");
+    }
+
+    if (allowedMarinade) {
+      allowedProtocols.push("MARINADE");
     }
 
     const result = await savePolicy({
@@ -232,6 +248,22 @@ export function PolicyScreen() {
           subtitle="Enable token transfers to other wallets"
           value={allowedTransfers}
           onValueChange={setAllowedTransfers}
+        />
+
+        <ToggleRow
+          icon="account-group"
+          title="Multi-Send"
+          subtitle="Fan-out SOL to multiple recipients at once"
+          value={allowedMultiSend}
+          onValueChange={setAllowedMultiSend}
+        />
+
+        <ToggleRow
+          icon="wave"
+          title="Marinade Staking"
+          subtitle="Liquid stake SOL → mSOL via Marinade Finance"
+          value={allowedMarinade}
+          onValueChange={setAllowedMarinade}
         />
 
         {/* Kill Switch */}

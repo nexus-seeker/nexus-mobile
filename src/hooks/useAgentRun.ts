@@ -18,6 +18,7 @@ export type AgentRunState =
     | 'awaiting_approval'
     | 'signing'
     | 'confirmed'
+    | 'answered'      // conversational response (analysis) — no tx
     | 'rejected'
     | 'error';
 
@@ -34,6 +35,7 @@ export function useAgentRun() {
     const [steps, setSteps] = useState<StepEvent[]>([]);
     const [result, setResult] = useState<AgentRunResult | null>(null);
     const [confirmedSig, setConfirmedSig] = useState<string | null>(null);
+    const [agentMessage, setAgentMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const isStillWorkingStep = useCallback(
@@ -78,6 +80,7 @@ export function useAgentRun() {
         setSteps([]);
         setResult(null);
         setConfirmedSig(null);
+        setAgentMessage(null);
         setError(null);
     }, [stopActiveRun]);
 
@@ -120,6 +123,7 @@ export function useAgentRun() {
                 }
 
                 setSteps(executeResponse.steps ?? []);
+                setAgentMessage(null);
 
                 if (!executeResponse.runId) {
                     throw new Error('Agent run could not be started');
@@ -211,6 +215,10 @@ export function useAgentRun() {
                                 setError(finalResult.rejection.reason);
                             } else if (finalResult.unsignedTx) {
                                 setRunState('awaiting_approval');
+                            } else if (finalResult.agentMessage) {
+                                // Conversational answer (analysis) — no signature needed
+                                setAgentMessage(finalResult.agentMessage);
+                                setRunState('answered');
                             } else {
                                 setRunState('error');
                                 setError('Agent run completed without a transaction. Please retry.');
@@ -284,6 +292,7 @@ export function useAgentRun() {
         steps,
         result,
         confirmedSig,
+        agentMessage,
         error,
 
         // Actions

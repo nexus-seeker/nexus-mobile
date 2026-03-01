@@ -22,9 +22,10 @@ import { Button, Card, Input, Text } from '../components/ui';
 import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
 
 const SUGGESTIONS = [
-  'Pay alice.skr 500 USDC, bob.skr 300 USDC',
-  'Run payroll for 5 contractors in USDC',
-  'Review this week\'s payroll and send when policy-safe',
+  'Send 0.05 SOL each to addr1 and addr2',
+  'Stake 0.5 SOL via Marinade',
+  'Analyze my wallet activity',
+  'Swap 0.1 SOL to USDC',
 ];
 
 // Status Indicator
@@ -39,6 +40,8 @@ function StatusIndicator({ status }: { status: string }) {
         return colors.primary;
       case 'confirmed':
         return colors.success;
+      case 'answered':
+        return colors.primaryLight;
       case 'error':
       case 'rejected':
         return colors.error;
@@ -78,6 +81,7 @@ export function ChatScreen() {
     steps,
     result,
     confirmedSig,
+    agentMessage,
     error,
     executeIntent,
     approveTransaction,
@@ -117,6 +121,7 @@ export function ChatScreen() {
   const isRunning = runState === 'running';
   const showApproval = runState === 'awaiting_approval';
   const isSigning = runState === 'signing';
+  const isAnswered = runState === 'answered';
   const rejectionField = result?.rejection?.policyField;
   const showDemoSafeTransfer =
     runState === 'rejected' &&
@@ -229,6 +234,17 @@ export function ChatScreen() {
           </Card>
         )}
 
+        {/* Agent Message (analysis answer) */}
+        {isAnswered && agentMessage && (
+          <Card style={styles.agentCard}>
+            <View style={styles.agentCardHeader}>
+              <MaterialCommunityIcons name="brain" size={18} color={colors.primaryLight} />
+              <Text style={styles.agentLabel}>NEXUS ANALYSIS</Text>
+            </View>
+            <Text style={styles.agentMessageText}>{agentMessage}</Text>
+          </Card>
+        )}
+
         {/* Confirmed Transaction */}
         {confirmedSig && (
           <View style={styles.successCard}>
@@ -306,7 +322,7 @@ export function ChatScreen() {
         )}
 
         {/* Reset Button */}
-        {(runState === 'confirmed' || runState === 'rejected' || runState === 'error') && (
+        {(runState === 'confirmed' || runState === 'answered' || runState === 'rejected' || runState === 'error') && (
           <Button variant="outline" onPress={handleReset}>
             New Intent
           </Button>
@@ -657,5 +673,11 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     fontSize: typography.sizeXs,
     fontWeight: typography.weightMedium,
+  },
+  agentMessageText: {
+    color: colors.foreground,
+    fontSize: typography.sizeBase,
+    lineHeight: 22,
+    marginTop: spacing.xs,
   },
 });
