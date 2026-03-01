@@ -1,4 +1,5 @@
 import { Buffer } from "buffer";
+import * as Crypto from "expo-crypto";
 import type {
   Connection,
   PublicKey,
@@ -25,21 +26,21 @@ const POLICY_VAULT_ACCOUNT_DISCRIMINATOR = Uint8Array.from([
 
 /**
  * Derives an Anchor instruction discriminator: first 8 bytes of SHA-256("global:<name>").
- * Uses crypto.subtle (available in Hermes/RN ≥ 0.70) with a pure-JS fallback.
+ * Uses expo-crypto for cross-platform compatibility.
  */
 async function anchorDiscriminator(instructionName: string): Promise<Uint8Array> {
   const input = `global:${instructionName}`;
-  const encoded = new TextEncoder().encode(input);
+  const digestHex = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    input
+  );
 
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
-    return new Uint8Array(hashBuffer).slice(0, 8);
+  // Take the first 16 characters (8 bytes) of the hex string and convert to Uint8Array
+  const result = new Uint8Array(8);
+  for (let i = 0; i < 8; i++) {
+    result[i] = parseInt(digestHex.substring(i * 2, i * 2 + 2), 16);
   }
-
-  // Pure-JS SHA-256 fallback (for older RN/Jest environments)
-  const { createHash } = require('crypto') as typeof import('crypto');
-  const digest = createHash('sha256').update(input).digest();
-  return new Uint8Array(digest).slice(0, 8);
+  return result;
 }
 
 type PolicySigner = (
