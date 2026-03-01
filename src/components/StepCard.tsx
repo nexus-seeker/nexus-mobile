@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { Text } from './ui';
 import type { StepEvent } from '../services/agent/agent-api';
+import { colors } from '../theme/shadcn-theme';
 
 const KNOWN_NODE_LABELS: Record<string, string> = {
     parse_intent: '①',
@@ -91,13 +92,13 @@ export function StepCard({ step, index }: StepCardProps) {
     const getStatusColor = () => {
         switch (step.status) {
             case 'success':
-                return '#22c55e';
+                return colors.success;
             case 'rejected':
-                return '#ef4444';
+                return colors.error;
             case 'running':
-                return '#3b82f6';
+                return colors.primary;
             default:
-                return '#94a3b8';
+                return colors.foregroundMuted;
         }
     };
 
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 12,
         borderBottomWidth: 0.5,
-        borderBottomColor: '#e2e8f0',
+        borderBottomColor: colors.border,
     },
     row: {
         flexDirection: 'row',
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     label: {
         flex: 1,
         fontSize: 14,
-        color: '#334155',
+        color: colors.foreground,
     },
     statusIcon: {
         fontSize: 18,

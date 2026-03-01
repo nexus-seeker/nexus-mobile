@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { ScrollView, StyleSheet, View, Switch, ActivityIndicator, Pressable, Platform } from "react-native";
+import { ScrollView, StyleSheet, View, Switch, ActivityIndicator, Pressable, Platform, Image } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,13 +11,15 @@ import { colors, spacing, radii, typography } from "../theme/shadcn-theme";
 // Toggle Row Component
 function ToggleRow({
   icon,
+  imageUrl,
   title,
   subtitle,
   value,
   onValueChange,
   disabled = false,
 }: {
-  icon: string;
+  icon?: string;
+  imageUrl?: string;
   title: string;
   subtitle: string;
   value: boolean;
@@ -25,18 +27,32 @@ function ToggleRow({
   disabled?: boolean;
 }) {
   return (
-    <View style={styles.toggleRow}>
+    <Pressable
+      style={[
+        styles.toggleRow,
+        value && styles.toggleRowActive,
+        disabled && { opacity: 0.5 }
+      ]}
+      onPress={() => !disabled && onValueChange(!value)}
+    >
       <View style={styles.toggleRowLeft}>
         <View style={[styles.toggleIcon, value && styles.toggleIconActive]}>
-          <MaterialCommunityIcons
-            name={icon as any}
-            size={20}
-            color={value ? colors.foreground : colors.foregroundMuted}
-          />
+          {imageUrl ? (
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.protocolLogo}
+            />
+          ) : (
+            <MaterialCommunityIcons
+              name={icon as any}
+              size={20}
+              color={value ? colors.foreground : colors.foregroundMuted}
+            />
+          )}
         </View>
-        <View>
+        <View style={styles.toggleTextContainer}>
           <Text style={styles.toggleTitle}>{title}</Text>
-          <Text style={styles.toggleSubtitle}>{subtitle}</Text>
+          <Text style={styles.toggleSubtitle} numberOfLines={2}>{subtitle}</Text>
         </View>
       </View>
       <Switch
@@ -44,9 +60,9 @@ function ToggleRow({
         onValueChange={onValueChange}
         disabled={disabled}
         trackColor={{ false: colors.backgroundTertiary, true: colors.primary }}
-        thumbColor={value ? colors.foreground : colors.foregroundMuted}
+        thumbColor={Platform.OS === 'ios' ? '#FFFFFF' : (value ? '#FFFFFF' : colors.foregroundMuted)}
       />
-    </View>
+    </Pressable>
   );
 }
 
@@ -236,6 +252,7 @@ export function PolicyScreen() {
 
         <ToggleRow
           icon="swap-horizontal"
+          imageUrl="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdY13310r/logo.png"
           title="Jupiter Swaps"
           subtitle="Enable token swaps through Jupiter DEX"
           value={allowedJupiter}
@@ -244,6 +261,7 @@ export function PolicyScreen() {
 
         <ToggleRow
           icon="send"
+          imageUrl="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/So11111111111111111111111111111111111111112/logo.png"
           title="SPL Transfers"
           subtitle="Enable token transfers to other wallets"
           value={allowedTransfers}
@@ -260,6 +278,7 @@ export function PolicyScreen() {
 
         <ToggleRow
           icon="wave"
+          imageUrl="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqkVmF8g/logo.png"
           title="Marinade Staking"
           subtitle="Liquid stake SOL → mSOL via Marinade Finance"
           value={allowedMarinade}
@@ -425,37 +444,60 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: 'rgba(24, 24, 27, 0.4)',
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    marginBottom: spacing.sm,
+  },
+  toggleRowActive: {
+    backgroundColor: 'rgba(168, 85, 247, 0.08)',
+    borderColor: 'rgba(168, 85, 247, 0.2)',
   },
   toggleRowLeft: {
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    paddingRight: spacing.md,
   },
   toggleIcon: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radii.md,
     backgroundColor: colors.backgroundTertiary,
     alignItems: "center",
     justifyContent: "center",
     marginRight: spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   toggleIconActive: {
     backgroundColor: colors.primary,
+    borderColor: colors.primaryLight,
   },
   toggleIconDanger: {
     backgroundColor: colors.errorMuted,
   },
+  protocolLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  toggleTextContainer: {
+    flex: 1,
+  },
   toggleTitle: {
     fontSize: typography.sizeBase,
-    fontWeight: typography.weightMedium,
+    fontWeight: typography.weightSemibold,
     color: colors.foreground,
+    marginBottom: 2,
   },
   toggleSubtitle: {
-    fontSize: typography.sizeXs,
+    fontSize: typography.sizeSm,
     color: colors.foregroundMuted,
-    marginTop: 2,
+    lineHeight: 18,
   },
   killSwitchContainer: {
     flexDirection: "row",

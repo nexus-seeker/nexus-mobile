@@ -33,6 +33,7 @@ export function useAgentRun() {
 
     const [runState, setRunState] = useState<AgentRunState>('idle');
     const [steps, setSteps] = useState<StepEvent[]>([]);
+    const [currentIntent, setCurrentIntent] = useState<string | null>(null);
     const [result, setResult] = useState<AgentRunResult | null>(null);
     const [confirmedSig, setConfirmedSig] = useState<string | null>(null);
     const [agentMessage, setAgentMessage] = useState<string | null>(null);
@@ -77,6 +78,7 @@ export function useAgentRun() {
         runTokenRef.current += 1;
         stopActiveRun(activeRunToken);
         setRunState('idle');
+        setCurrentIntent(null);
         setSteps([]);
         setResult(null);
         setConfirmedSig(null);
@@ -110,6 +112,7 @@ export function useAgentRun() {
                 stopActiveRun(previousRunToken);
 
                 setRunState('running');
+                setCurrentIntent(intent);
                 setSteps([]);
                 setResult(null);
                 setConfirmedSig(null);
@@ -289,6 +292,7 @@ export function useAgentRun() {
     return {
         // State
         runState,
+        currentIntent,
         steps,
         result,
         confirmedSig,

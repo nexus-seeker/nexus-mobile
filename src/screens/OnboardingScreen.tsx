@@ -26,7 +26,7 @@ type OnboardingState =
     | 'error';     // check or sign failed — show retry button
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
-    const { selectedAccount, authorizeSession } = useAuthorization();
+    const { selectedAccount, authorizeSession, isLoading } = useAuthorization();
 
     const [uiState, setUiState] = useState<OnboardingState>('checking');
     const [error, setError] = useState<string | null>(null);
@@ -37,8 +37,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         let cancelled = false;
 
         async function checkStatus() {
-            if (!selectedAccount) {
-                onComplete();
+            // Wait until React Query completes loading the selected account from cache
+            if (isLoading || !selectedAccount) {
                 return;
             }
 
@@ -66,7 +66,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
         void checkStatus();
         return () => { cancelled = true; };
-    }, [selectedAccount, onComplete]);
+    }, [selectedAccount, isLoading, onComplete]);
 
     // ─── Setup flow: fetch tx → sign → confirm ───────────────────────
 
