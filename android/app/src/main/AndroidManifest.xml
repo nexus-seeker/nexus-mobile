@@ -26,7 +26,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="com.nexusseeker.nexusmobile"/>
+        <data android:scheme="com.benelabs.kawula"/>
         <data android:scheme="exp+nexus-mobile"/>
       </intent-filter>
     </activity>

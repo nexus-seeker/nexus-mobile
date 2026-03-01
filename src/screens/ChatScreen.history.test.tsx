@@ -149,6 +149,6 @@ describe('ChatScreen history hydration', () => {
 
     const { queryByText } = render(<ChatScreen />);
 
-    expect(queryByText('NEXUS is ready.')).toBeNull();
+    expect(queryByText('Kawula is ready.')).toBeNull();
   });
 });

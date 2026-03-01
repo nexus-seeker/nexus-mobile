@@ -147,11 +147,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.iconContainer}>
-                    <Image source={require('../../assets/images/onboarding_nexus_shield.png')} style={styles.shieldImage} />
+                    <Image source={require('../../assets/images/onboarding_kawula_shield.png')} style={styles.shieldImage} />
                 </View>
                 <Text variant="h3" style={styles.title}>One-Time Setup</Text>
                 <Text variant="muted" style={styles.subtitle}>
-                    Your wallet needs a quick on-chain setup before the NEXUS agent can run.
+                    Your wallet needs a quick on-chain setup before the Kawula agent can run.
                     This creates your Agent Profile and Policy Vault — secured by Seed Vault.
                 </Text>
             </View>
@@ -161,7 +161,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 <StepRow
                     imageSource={require('../../assets/images/onboarding_agent_profile.png')}
                     title="Agent Profile"
-                    description="Registers your wallet with the NEXUS on-chain program"
+                    description="Registers your wallet with the Kawula on-chain program"
                 />
                 <View style={styles.divider} />
                 <StepRow

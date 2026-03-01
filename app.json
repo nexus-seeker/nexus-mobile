@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Nexus",
-    "slug": "nexus-mobile",
+    "name": "Kawula",
+    "slug": "kawula-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,7 +16,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.nexusseeker.nexusmobile"
+      "bundleIdentifier": "com.benelabs.kawula"
     },
     "android": {
       "adaptiveIcon": {

@@ -47,10 +47,10 @@ describe('Notification Router', () => {
   });
 
   describe('validateDeepLink', () => {
-    it('accepts valid nexus links', () => {
-      expect(validateDeepLink('nexus://wallet')).toBe(true);
-      expect(validateDeepLink('nexus://chat/123')).toBe(true);
-      expect(validateDeepLink('nexus://transaction/abc')).toBe(true);
+    it('accepts valid kawula links', () => {
+      expect(validateDeepLink('kawula://wallet')).toBe(true);
+      expect(validateDeepLink('kawula://chat/123')).toBe(true);
+      expect(validateDeepLink('kawula://transaction/abc')).toBe(true);
     });
 
     it('rejects invalid schemes', () => {
@@ -59,11 +59,11 @@ describe('Notification Router', () => {
     });
 
     it('rejects path traversal attempts', () => {
-      expect(validateDeepLink('nexus://wallet/../etc/passwd')).toBe(false);
+      expect(validateDeepLink('kawula://wallet/../etc/passwd')).toBe(false);
     });
 
     it('rejects invalid hosts', () => {
-      expect(validateDeepLink('nexus://hack')).toBe(false);
+      expect(validateDeepLink('kawula://hack')).toBe(false);
     });
   });
 });

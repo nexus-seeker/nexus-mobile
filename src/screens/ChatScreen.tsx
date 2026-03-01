@@ -168,7 +168,7 @@ export function ChatScreen() {
             <Text style={styles.walletChipText}>{shortPubkey}</Text>
           </Pressable>
 
-          {/* Center: NEXUS Brand */}
+          {/* Center: Kawula Brand */}
           <View style={styles.headerTitleContainer}>
             <MaterialCommunityIcons
               name="hexagon-multiple"
@@ -176,7 +176,7 @@ export function ChatScreen() {
               color={colors.primaryLight}
               style={{ marginRight: spacing.sm }}
             />
-            <Text variant="h4" style={{ letterSpacing: 2 }}>NEXUS</Text>
+            <Text variant="h4" style={{ letterSpacing: 2 }}>Kawula</Text>
           </View>
 
           {/* Right: Policy Shield */}
@@ -224,7 +224,7 @@ export function ChatScreen() {
           <Card style={styles.agentCard}>
             <View style={styles.agentCardHeader}>
               <MaterialCommunityIcons name="robot" size={18} color={colors.primaryLight} />
-              <Text style={styles.agentLabel}>NEXUS AGENT</Text>
+              <Text style={styles.agentLabel}>Kawula AGENT</Text>
             </View>
             <View style={styles.stepsContainer}>
               {steps.map((step, i) => (
@@ -239,7 +239,7 @@ export function ChatScreen() {
           <Card style={styles.agentCard}>
             <View style={styles.agentCardHeader}>
               <MaterialCommunityIcons name="brain" size={18} color={colors.primaryLight} />
-              <Text style={styles.agentLabel}>NEXUS ANALYSIS</Text>
+              <Text style={styles.agentLabel}>Kawula ANALYSIS</Text>
             </View>
             <Text style={styles.agentMessageText}>{agentMessage}</Text>
           </Card>
@@ -334,7 +334,7 @@ export function ChatScreen() {
             <View style={styles.emptyStateOrb}>
               <MaterialCommunityIcons name="brain" size={40} color={colors.primaryLight} />
             </View>
-            <Text variant="h3" style={{ textAlign: 'center', marginTop: spacing.lg }}>NEXUS is ready.</Text>
+            <Text variant="h3" style={{ textAlign: 'center', marginTop: spacing.lg }}>Kawula is ready.</Text>
             <Text variant="muted" style={{ marginTop: spacing.sm, textAlign: 'center' }}>
               Speak your intent clearly and we'll execute it on-chain.
             </Text>
