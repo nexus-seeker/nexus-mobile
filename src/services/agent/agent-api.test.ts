@@ -1,6 +1,7 @@
 import {
   API_BASE_URL,
   executeAgent,
+  fetchConversationThreads,
   fetchHistory,
   fetchPolicy,
   fetchReceipts,
@@ -46,6 +47,23 @@ describe('agent-api contract', () => {
 
     await expect(executeAgent('swap', 'wallet-1')).rejects.toThrow(
       'Agent execute failed: 503',
+    );
+  });
+
+  it('executeAgent sends optional threadId when provided', async () => {
+    const response = { runId: 'run-2', steps: [] };
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(response),
+    });
+
+    await expect(executeAgent('swap', 'wallet-1', 'thread-1')).resolves.toEqual(response);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/agent/execute`,
+      expect.objectContaining({
+        body: JSON.stringify({ intent: 'swap', pubkey: 'wallet-1', threadId: 'thread-1' }),
+      }),
     );
   });
 
@@ -203,6 +221,34 @@ describe('agent-api contract', () => {
 
   it('getSSEUrl builds stream url from api base', () => {
     expect(getSSEUrl('run-42')).toBe(`${API_BASE_URL}/agent/run-42/stream`);
+  });
+
+  it('fetchConversationThreads requests encoded pubkey and returns threads', async () => {
+    const threads = [{ id: 'thread-1', title: 'Main Copilot', updatedAt: 1700000000000 }];
+
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(threads),
+    });
+
+    await expect(fetchConversationThreads('wallet/with space')).resolves.toEqual(threads);
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      `${API_BASE_URL}/history/threads?pubkey=wallet%2Fwith%20space`,
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'x-api-key': expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it('fetchConversationThreads throws with status when request fails', async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 503 });
+
+    await expect(fetchConversationThreads('wallet-1')).rejects.toThrow(
+      'Conversation threads fetch failed: 503',
+    );
   });
 });
 

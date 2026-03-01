@@ -13,7 +13,7 @@ export function useHistory(
 
   return useQuery({
     queryKey: ['history', pubkey, limit, beforeTs, beforeId],
-    queryFn: () => fetchHistory(pubkey!, limit, beforeTs, beforeId),
+    queryFn: () => (pubkey ? fetchHistory(pubkey, limit, beforeTs, beforeId) : Promise.resolve({ messages: [] })),
     enabled: !!pubkey && !hasInvalidCursor,
   });
 }

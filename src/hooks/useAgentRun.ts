@@ -97,7 +97,7 @@ export function useAgentRun() {
     // ─── Execute Intent ───────────────────────────────────────────
 
     const executeIntent = useCallback(
-        async (intent: string) => {
+        async (intent: string, threadId?: string) => {
             if (!selectedAccount) {
                 setError('Wallet not connected');
                 setRunState('error');
@@ -119,7 +119,7 @@ export function useAgentRun() {
                 setError(null);
 
                 const pubkey = selectedAccount.publicKey.toBase58();
-                const executeResponse = await executeAgent(intent, pubkey);
+                const executeResponse = await executeAgent(intent, pubkey, threadId);
 
                 if (runTokenRef.current !== runToken) {
                     return;

@@ -3,6 +3,7 @@ import { render } from '@testing-library/react-native';
 import { ChatScreen } from './ChatScreen';
 import { useAgentRun } from '../hooks/useAgentRun';
 import { useHistory } from '../hooks/useHistory';
+import { useProactiveFeed } from '../hooks/useProactiveFeed';
 
 jest.mock('../hooks/useAgentRun', () => ({
   useAgentRun: jest.fn(),
@@ -10,6 +11,10 @@ jest.mock('../hooks/useAgentRun', () => ({
 
 jest.mock('../hooks/useHistory', () => ({
   useHistory: jest.fn(),
+}));
+
+jest.mock('../hooks/useProactiveFeed', () => ({
+  useProactiveFeed: jest.fn(),
 }));
 
 jest.mock('../utils/useAuthorization', () => ({
@@ -26,6 +31,9 @@ jest.mock('../utils/useAuthorization', () => ({
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({
     navigate: jest.fn(),
+  }),
+  useRoute: () => ({
+    params: {},
   }),
 }));
 
@@ -69,6 +77,13 @@ describe('ChatScreen history hydration', () => {
       executeIntent: jest.fn(),
       approveTransaction: jest.fn(),
       resetRun: jest.fn(),
+    });
+
+    (useProactiveFeed as jest.Mock).mockReturnValue({
+      data: [],
+      isLoading: false,
+      sendFeedback: jest.fn(),
+      isSendingFeedback: false,
     });
   });
 

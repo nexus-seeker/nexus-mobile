@@ -5,6 +5,7 @@ import { WalletConnectScreen } from "../screens/WalletConnectScreen";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
 
 import {
+  ConversationListScreen,
   ChatScreen,
   PolicyScreen,
   ProfileScreen,
@@ -26,7 +27,8 @@ import {
 export type RootStackParamList = {
   WalletConnect: undefined;
   Onboarding: undefined;
-  Chat: undefined;
+  ConversationList: undefined;
+  Chat: { threadId?: string; recommendationId?: string } | undefined;
   Policy: undefined;
   Profile: undefined;
   History: undefined;
@@ -60,19 +62,26 @@ const AppStack = () => {
       >
         {(props) => (
           <OnboardingScreen
-            onComplete={() => props.navigation.replace("Chat")}
+            onComplete={() => props.navigation.replace("ConversationList")}
           />
         )}
       </Stack.Screen>
 
-      {/* Step 3: pure agent UX - Chat is the root */}
+      {/* Step 3: choose conversation thread */}
+      <Stack.Screen
+        name="ConversationList"
+        component={ConversationListScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
+
+      {/* Step 4: pure agent UX */}
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
         options={{ headerShown: false, gestureEnabled: false }}
       />
 
-      {/* Step 4: modal slide-ups */}
+      {/* Step 5: modal slide-ups */}
       <Stack.Group screenOptions={{ presentation: "modal", headerShown: false }}>
         <Stack.Screen name="Policy" component={PolicyScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
