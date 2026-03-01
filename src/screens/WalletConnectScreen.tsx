@@ -45,7 +45,7 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                 {/* Logo / Title */}
                 <View style={styles.header}>
                     <Text variant="h2" style={styles.title}>
-                        NEXUS
+                        Kawula
                     </Text>
                     <Text variant="lead" style={styles.subtitle}>
                         AI Agent OS for Solana Mobile
@@ -63,7 +63,7 @@ export function WalletConnectScreen({ onConnected }: WalletConnectScreenProps) {
                             <View style={styles.featureText}>
                                 <Text variant="h4">Natural Language DeFi</Text>
                                 <Text variant="muted" style={styles.featureDesc}>
-                                    Just say what you want — NEXUS handles the rest
+                                    Just say what you want — Kawula handles the rest
                                 </Text>
                             </View>
                         </View>

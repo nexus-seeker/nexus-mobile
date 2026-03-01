@@ -1,5 +1,5 @@
 {
-  "name": "nexus-mobile",
+  "name": "kawula-mobile",
   "version": "1.0.0",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -41,6 +41,7 @@
     "expo-status-bar": "~2.0.1",
     "expo-system-ui": "~4.0.9",
     "firebase": "^12.9.0",
+    "onesignal-expo-plugin": "^2.1.0",
     "react": "18.3.1",
     "react-native": "0.76.9",
     "react-native-onesignal": "^5.3.1",

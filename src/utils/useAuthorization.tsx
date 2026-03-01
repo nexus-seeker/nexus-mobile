@@ -96,8 +96,8 @@ async function persistAuthorization(
 }
 
 export const APP_IDENTITY = {
-  name: "NEXUS",
-  uri: "https://nexus.app",
+  name: "Kawula",
+  uri: "https://kawula.app",
 };
 
 export function useAuthorization() {

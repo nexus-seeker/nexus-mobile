@@ -5,7 +5,7 @@ import {
   type PolicyState,
 } from "../../features/policy/policy-engine";
 
-export const POLICY_STORAGE_KEY = "nexus.policy.v1";
+export const POLICY_STORAGE_KEY = "kawula.policy.v1";
 
 const VALID_PROTOCOLS: readonly PolicyProtocol[] = ["JUPITER", "SPL_TRANSFER"];
 

@@ -43,9 +43,9 @@ export function SignInButton() {
       }
       setSignInInProgress(true);
       await signIn({
-        domain: "nexus.app",
-        statement: "Sign into NEXUS",
-        uri: "https://nexus.app",
+        domain: "kawula.app",
+        statement: "Sign into Kawula",
+        uri: "https://kawula.app",
       });
     } catch (err: any) {
       alertAndLog(

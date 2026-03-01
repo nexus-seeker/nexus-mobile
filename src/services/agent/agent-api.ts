@@ -1,9 +1,9 @@
-// Shared contract types matching nexus-api/src/agent/state.ts
+// Shared contract types matching kawula-api/src/agent/state.ts
 
 const API_BASE_URL =
   process.env.EXPO_PUBLIC_AGENT_API_URL || 'http://localhost:3001';
 const API_KEY =
-  process.env.EXPO_PUBLIC_API_KEY || 'nexus-hackathon-key';
+  process.env.EXPO_PUBLIC_API_KEY || 'kawula-hackathon-key';
 
 export interface StepEvent {
   type: 'step' | 'heartbeat' | 'complete' | 'error';

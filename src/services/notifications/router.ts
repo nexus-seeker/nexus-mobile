@@ -10,7 +10,7 @@ export const getRouteForNotification = (
 };
 
 export const validateDeepLink = (url: string): boolean => {
-  const allowedSchemes = ['nexus:'];
+  const allowedSchemes = ['kawula:'];
   const allowedHosts = ['transaction', 'chat', 'wallet', 'settings'];
 
   // Check for path traversal attempts before parsing

@@ -1,4 +1,4 @@
-// shadcn/ui Modern Web3 Design System for NEXUS
+// shadcn/ui Modern Web3 Design System for Kawula
 // Dark theme with zinc-based palette and minimal aesthetics
 
 import { FONT_FAMILY } from './fonts';

@@ -150,7 +150,7 @@ export function ProfileScreen() {
               </LinearGradient>
               <Text variant="h4" style={styles.connectTitle}>Connect Your Wallet</Text>
               <Text variant="muted" style={styles.connectSubtitle}>
-                Connect your Solana wallet to access all NEXUS features
+                Connect your Solana wallet to access all Kawula features
               </Text>
             </Card>
           )}

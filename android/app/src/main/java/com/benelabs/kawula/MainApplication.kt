@@ -1,7 +1,8 @@
-package com.nexusseeker.nexusmobile
+package com.benelabs.kawula
 
 import android.app.Application
 import android.content.res.Configuration
+import com.benelabs.kawula.BuildConfig
 
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
