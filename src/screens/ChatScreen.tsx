@@ -181,10 +181,11 @@ export function ChatScreen() {
 
           {/* Right: Policy Shield */}
           <Pressable
-            style={styles.iconButton}
+            style={styles.policyChip}
             onPress={() => navigation.navigate("Policy")}
           >
-            <MaterialCommunityIcons name="shield-check" size={24} color={colors.foreground} />
+            <MaterialCommunityIcons name="shield-check" size={14} color={colors.foreground} />
+            <Text style={styles.policyChipText}>Policy</Text>
           </Pressable>
 
         </View>
@@ -459,6 +460,22 @@ const styles = StyleSheet.create({
     color: colors.foreground,
     fontSize: typography.sizeXs,
     fontFamily: typography.fontMono,
+    marginLeft: spacing.xs,
+  },
+  policyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.backgroundTertiary,
+    borderRadius: radii.full,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  policyChipText: {
+    color: colors.foreground,
+    fontSize: typography.sizeXs,
+    fontWeight: typography.weightMedium,
     marginLeft: spacing.xs,
   },
   chatArea: {
