@@ -78,6 +78,7 @@ export function ChatScreen() {
   const [isApprovalSheetVisible, setIsApprovalSheetVisible] = useState(false);
   const {
     runState,
+    currentIntent,
     steps,
     result,
     confirmedSig,
@@ -130,12 +131,6 @@ export function ChatScreen() {
       (rejectionField === 'tx_assembly' &&
         (error?.includes('InvalidProgramForExecution') ?? false)));
   const showOnboardingPrompt = runState === 'rejected' && rejectionField === 'not_onboarded' && !!pubkey;
-  const showPayrollPolicyGuidance =
-    runState === 'rejected' &&
-    !!error &&
-    rejectionField !== 'jupiter' &&
-    rejectionField !== 'tx_assembly' &&
-    rejectionField !== 'not_onboarded';
 
   // Navigate back to the onboarding gate so the user can set up properly
   function handleGoToSetup() {
@@ -220,6 +215,19 @@ export function ChatScreen() {
           </Card>
         )}
 
+        {/* User Message Bubble */}
+        {currentIntent && runState !== 'idle' && (
+          <View style={styles.userBubbleContainer}>
+            <View style={styles.userCardHeader}>
+              <Text style={styles.userLabel}>YOU</Text>
+              <MaterialCommunityIcons name="account" size={16} color={colors.foregroundMuted} />
+            </View>
+            <View style={styles.userBubble}>
+              <Text style={styles.userMessageText}>{currentIntent}</Text>
+            </View>
+          </View>
+        )}
+
         {/* Agent Steps */}
         {steps.length > 0 && (
           <Card style={styles.agentCard}>
@@ -257,26 +265,7 @@ export function ChatScreen() {
           </View>
         )}
 
-        {/* Error Message */}
-        {error && runState !== 'awaiting_approval' && (
-          <View style={styles.errorCard}>
-            <MaterialCommunityIcons name="alert-circle" size={24} color={colors.error} />
-            <Text variant="h4" style={{ color: colors.error, marginTop: spacing.sm }}>
-              {runState === 'rejected' ? 'Policy Rejected' : 'Error'}
-            </Text>
-            {showPayrollPolicyGuidance && (
-              <>
-                <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>
-                  This payroll intent is outside your policy limits.
-                </Text>
-                <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>
-                  Lower amounts or split the payroll run, then submit again.
-                </Text>
-              </>
-            )}
-            <Text variant="muted" style={{ textAlign: 'center', marginTop: spacing.xs }}>{error}</Text>
-          </View>
-        )}
+
 
         {showOnboardingPrompt && (
           <Card variant="outline" style={styles.fallbackCard}>
@@ -322,12 +311,7 @@ export function ChatScreen() {
           </View>
         )}
 
-        {/* Reset Button */}
-        {(runState === 'confirmed' || runState === 'answered' || runState === 'rejected' || runState === 'error') && (
-          <Button variant="outline" onPress={handleReset}>
-            New Intent
-          </Button>
-        )}
+
 
         {/* Empty State */}
         {steps.length === 0 && runState === 'idle' && !isHistoryLoading && historyMessages.length === 0 && (
@@ -483,6 +467,7 @@ const styles = StyleSheet.create({
   },
   chatContent: {
     padding: spacing.lg,
+    paddingBottom: 120,
     gap: spacing.lg,
   },
   statusBar: {
@@ -513,6 +498,43 @@ const styles = StyleSheet.create({
   },
   agentCard: {
     padding: spacing.lg,
+    borderRadius: radii.xl,
+    borderTopLeftRadius: radii.sm,
+    backgroundColor: colors.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.md,
+  },
+  userBubbleContainer: {
+    alignSelf: 'flex-end',
+    maxWidth: '85%',
+    marginBottom: spacing.md,
+  },
+  userCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginBottom: spacing.xs,
+  },
+  userLabel: {
+    color: colors.foregroundMuted,
+    fontSize: typography.sizeXs,
+    fontWeight: typography.weightSemibold,
+    letterSpacing: 1,
+    marginRight: spacing.xs,
+  },
+  userBubble: {
+    backgroundColor: colors.backgroundElevated,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+    borderTopRightRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  userMessageText: {
+    color: colors.foreground,
+    fontSize: typography.sizeBase,
+    lineHeight: 22,
   },
   historyCard: {
     padding: spacing.lg,
@@ -558,14 +580,7 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     marginTop: spacing.xs,
   },
-  errorCard: {
-    backgroundColor: colors.errorMuted,
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.error,
-  },
+
   fallbackCard: {
     padding: spacing.lg,
     gap: spacing.sm,

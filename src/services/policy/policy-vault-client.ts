@@ -334,6 +334,17 @@ function toProgramProtocols(protocols: PolicyProtocol[]): string[] {
 
     if (protocol === "SPL_TRANSFER") {
       mapped.push("spl_transfer");
+      continue;
+    }
+
+    if (protocol === "MULTI_SEND") {
+      mapped.push("multi_send");
+      continue;
+    }
+
+    if (protocol === "MARINADE") {
+      mapped.push("stake"); // Match API's parsed action for marinade stake
+      continue;
     }
   }
 
@@ -346,6 +357,12 @@ function fromProgramProtocol(protocol: string): PolicyProtocol | null {
   }
   if (protocol === "spl_transfer") {
     return "SPL_TRANSFER";
+  }
+  if (protocol === "multi_send") {
+    return "MULTI_SEND";
+  }
+  if (protocol === "stake") {
+    return "MARINADE";
   }
   return null;
 }
