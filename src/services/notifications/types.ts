@@ -14,6 +14,8 @@ export interface NotificationPayload {
     screen?: string;
     params?: Record<string, any>;
     deeplink?: string;
+    threadId?: string;
+    recommendationId?: string;
   };
   android?: {
     channelId: string;
@@ -93,6 +95,9 @@ export const NOTIFICATION_ROUTES: Record<string, NotificationRoute> = {
   chat_message: {
     screen: 'Chat',
     params: { navigateToConversation: true },
+  },
+  proactive_action: {
+    screen: 'Chat',
   },
   promo_feature: {
     screen: 'FeatureHighlight',

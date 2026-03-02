@@ -10,7 +10,7 @@ export interface StepEvent {
   node?: string;
   label?: string;
   status?: 'running' | 'success' | 'rejected';
-  payload?: unknown;
+  payload?: Record<string, unknown>;
   result?: AgentRunResult;
   message?: string;
 }
@@ -64,12 +64,45 @@ export interface MessageDto {
   role: string;
   content: string;
   runId: string;
+  threadId?: string;
   steps?: unknown[];
   rejection?: {
     reason: string;
     policyField: string;
   };
   timestamp: number;
+}
+
+export interface ConversationThreadDto {
+  id: string;
+  title: string;
+  updatedAt: number;
+}
+
+export type RecommendationActionType = 'approve' | 'reject' | 'ignore' | 'open';
+export type RecommendationFeedbackOutcome = 'approved' | 'rejected' | 'ignored';
+
+export interface RecommendationActionDto {
+  id: string;
+  label: string;
+  type: RecommendationActionType;
+}
+
+export interface ProactiveRecommendationDto {
+  id: string;
+  pubkey: string;
+  threadId?: string;
+  title: string;
+  summary: string;
+  confidence: number;
+  status: string;
+  actions: RecommendationActionDto[];
+  createdAt: number;
+}
+
+export interface RecommendationFeedbackRequest {
+  outcome: RecommendationFeedbackOutcome;
+  reason?: string;
 }
 
 export interface HistoryResponseDto {
@@ -119,11 +152,18 @@ const headers = {
 export async function executeAgent(
   intent: string,
   pubkey: string,
+  threadId?: string,
 ): Promise<AgentExecuteResponse> {
+  const body: { intent: string; pubkey: string; threadId?: string } = { intent, pubkey };
+
+  if (threadId) {
+    body.threadId = threadId;
+  }
+
   const response = await fetch(`${API_BASE_URL}/agent/execute`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ intent, pubkey }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -131,6 +171,66 @@ export async function executeAgent(
   }
 
   return response.json();
+}
+
+export async function fetchConversationThreads(
+  pubkey: string,
+): Promise<ConversationThreadDto[]> {
+  const response = await fetch(
+    `${API_BASE_URL}/history/threads?pubkey=${encodeURIComponent(pubkey)}`,
+    { headers },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Conversation threads fetch failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchProactiveFeed(
+  pubkey: string,
+  threadId?: string,
+): Promise<ProactiveRecommendationDto[]> {
+  const params = [`pubkey=${encodeURIComponent(pubkey)}`];
+  if (threadId) {
+    params.push(`threadId=${encodeURIComponent(threadId)}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}/proactive/feed?${params.join('&')}`, {
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Proactive feed fetch failed: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { recommendations?: ProactiveRecommendationDto[] } | ProactiveRecommendationDto[];
+  return Array.isArray(payload) ? payload : payload.recommendations ?? [];
+}
+
+export async function sendRecommendationFeedback(
+  recommendationId: string,
+  outcome: RecommendationFeedbackOutcome,
+  reason?: string,
+): Promise<void> {
+  const body: RecommendationFeedbackRequest = { outcome };
+  if (reason) {
+    body.reason = reason;
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/proactive/recommendations/${encodeURIComponent(recommendationId)}/feedback`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Recommendation feedback failed: ${response.status}`);
+  }
 }
 
 export function openAgentStream(

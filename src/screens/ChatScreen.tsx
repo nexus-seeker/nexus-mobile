@@ -11,15 +11,26 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthorization } from '../utils/useAuthorization';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  type NavigationProp,
+  type RouteProp,
+} from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { type RootStackParamList } from '../navigators/AppNavigator';
 import { useAgentRun } from '../hooks/useAgentRun';
 import { useHistory } from '../hooks/useHistory';
+import { useProactiveFeed } from '../hooks/useProactiveFeed';
 import { StepCard } from '../components/StepCard';
 import { ApprovalSheet } from '../components/ApprovalSheet';
+import { ProactiveCard } from '../components/ProactiveCard';
 import { Button, Card, Input, Text } from '../components/ui';
 import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
+import type {
+  RecommendationActionType,
+  RecommendationFeedbackOutcome,
+} from '../services/agent/agent-api';
 
 const SUGGESTIONS = [
   'Send 0.05 SOL each to addr1 and addr2',
@@ -27,6 +38,46 @@ const SUGGESTIONS = [
   'Analyze my wallet activity',
   'Swap 0.1 SOL to USDC',
 ];
+
+type IntentClass = 'casual' | 'read' | 'action' | 'safety' | 'learn' | 'complex';
+
+const INTENT_BADGE_CONFIG: Record<IntentClass, { icon: string; label: string; color: string }> = {
+  casual: { icon: 'chat-outline', label: 'CASUAL', color: '#6B7280' },
+  read: { icon: 'magnify', label: 'READ', color: '#60A5FA' },
+  action: { icon: 'lightning-bolt', label: 'ACTION', color: '#A78BFA' },
+  safety: { icon: 'shield-alert', label: 'SAFETY', color: '#F59E0B' },
+  learn: { icon: 'school-outline', label: 'LEARN', color: '#34D399' },
+  complex: { icon: 'layers-triple', label: 'COMPLEX', color: '#F472B6' },
+};
+
+function IntentBadge({ intentClass }: { intentClass: IntentClass }) {
+  const cfg = INTENT_BADGE_CONFIG[intentClass];
+  return (
+    <View style={[intentBadgeStyles.badge, { borderColor: cfg.color + '55' }]}>
+      <MaterialCommunityIcons name={cfg.icon as any} size={11} color={cfg.color} />
+      <Text style={[intentBadgeStyles.label, { color: cfg.color }]}>{cfg.label}</Text>
+    </View>
+  );
+}
+
+const intentBadgeStyles = StyleSheet.create({
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    marginLeft: 'auto',
+  },
+  label: {
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+});
 
 // Status Indicator
 function StatusIndicator({ status }: { status: string }) {
@@ -73,6 +124,7 @@ function getHistoryRoleLabel(role: string): string {
 export function ChatScreen() {
   const { selectedAccount } = useAuthorization();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'Chat'>>();
   const insets = useSafeAreaInsets();
   const [intent, setIntent] = useState('');
   const [isApprovalSheetVisible, setIsApprovalSheetVisible] = useState(false);
@@ -90,10 +142,21 @@ export function ChatScreen() {
   } = useAgentRun();
 
   const pubkey = selectedAccount?.publicKey.toBase58();
+  const threadId = route.params?.threadId;
+  const recommendationIdFromRoute = route.params?.recommendationId;
   const { data: historyData, isLoading: isHistoryLoading } = useHistory(pubkey);
+  const {
+    data: proactiveFeed,
+    isLoading: isProactiveFeedLoading,
+    sendFeedback,
+    isSendingFeedback,
+  } = useProactiveFeed(pubkey, threadId);
   const historyMessages = historyData?.messages ?? [];
+  const threadScopedHistoryMessages = threadId
+    ? historyMessages.filter((message) => message.threadId === threadId)
+    : historyMessages;
   const shouldShowPersistedHistory = !isHistoryLoading && runState === 'idle' && steps.length === 0;
-  const persistedHistoryPreview = [...historyMessages]
+  const persistedHistoryPreview = [...threadScopedHistoryMessages]
     .sort((a, b) => {
       if (a.timestamp !== b.timestamp) {
         return b.timestamp - a.timestamp;
@@ -102,16 +165,58 @@ export function ChatScreen() {
     })
     .slice(0, 8)
     .reverse();
+
+  // Derive the intent class from the classify_intent step (streamed from agent)
+  const intentClass = steps
+    .find((s) => s.node === 'classify_intent')
+    ?.payload?.intentClass as IntentClass | undefined;
   const shortPubkey = pubkey
     ? `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}.skr`
     : 'Not connected';
+  const proactiveRecommendations = recommendationIdFromRoute
+    ? [...(proactiveFeed ?? [])].sort((a, b) => {
+      if (a.id === recommendationIdFromRoute) return -1;
+      if (b.id === recommendationIdFromRoute) return 1;
+      return b.createdAt - a.createdAt;
+    })
+    : proactiveFeed ?? [];
+
+  async function handleProactiveAction(
+    recommendationId: string,
+    actionType: RecommendationActionType,
+  ) {
+    const outcomeByAction: Partial<Record<RecommendationActionType, RecommendationFeedbackOutcome>> = {
+      approve: 'approved',
+      reject: 'rejected',
+      ignore: 'ignored',
+      open: 'ignored',
+    };
+    const reasonByAction: Partial<Record<RecommendationActionType, string>> = {
+      open: 'user_opened',
+    };
+
+    const outcome = outcomeByAction[actionType];
+    if (!outcome) {
+      return;
+    }
+
+    try {
+      await sendFeedback({
+        recommendationId,
+        outcome,
+        reason: reasonByAction[actionType],
+      });
+    } catch (feedbackError) {
+      console.warn('[ChatScreen] Failed to send proactive feedback', feedbackError);
+    }
+  }
 
   async function handleSend() {
     const trimmed = intent.trim();
     if (!trimmed || runState === 'running') return;
     setIntent('');
     setIsApprovalSheetVisible(false);
-    await executeIntent(trimmed);
+    await executeIntent(trimmed, threadId);
   }
 
   function handleReset() {
@@ -142,7 +247,7 @@ export function ChatScreen() {
     if (!pubkey) return;
     setIsApprovalSheetVisible(false);
     setIntent('');
-    await executeIntent(`Transfer 0.001 SOL to ${pubkey}`);
+    await executeIntent(`Transfer 0.001 SOL to ${pubkey}`, threadId);
   }
 
   return (
@@ -198,6 +303,32 @@ export function ChatScreen() {
           </View>
         )}
 
+        {proactiveRecommendations.length > 0 && (
+          <View style={styles.proactiveFeedSection}>
+            <View style={styles.agentCardHeader}>
+              <MaterialCommunityIcons name="flash" size={18} color={colors.primaryLight} />
+              <Text style={styles.agentLabel}>PROACTIVE RECOMMENDATIONS</Text>
+            </View>
+            <View style={styles.proactiveFeedCards}>
+              {proactiveRecommendations.map((recommendation) => (
+                <ProactiveCard
+                  key={recommendation.id}
+                  recommendation={recommendation}
+                  onAction={handleProactiveAction}
+                  disabled={isSendingFeedback}
+                />
+              ))}
+            </View>
+          </View>
+        )}
+
+        {isProactiveFeedLoading && proactiveRecommendations.length === 0 && (
+          <View style={styles.proactiveFeedLoadingRow}>
+            <ActivityIndicator size="small" color={colors.primaryLight} />
+            <Text variant="muted">Loading proactive recommendations...</Text>
+          </View>
+        )}
+
         {shouldShowPersistedHistory && persistedHistoryPreview.length > 0 && (
           <Card style={styles.historyCard}>
             <View style={styles.agentCardHeader}>
@@ -230,10 +361,14 @@ export function ChatScreen() {
 
         {/* Agent Steps */}
         {steps.length > 0 && (
-          <Card style={styles.agentCard}>
+          <Card style={[
+            styles.agentCard,
+            intentClass === 'safety' && { borderColor: '#F59E0B55', borderWidth: 1.5 },
+          ]}>
             <View style={styles.agentCardHeader}>
               <MaterialCommunityIcons name="robot" size={18} color={colors.primaryLight} />
               <Text style={styles.agentLabel}>Kawula AGENT</Text>
+              {intentClass && <IntentBadge intentClass={intentClass} />}
             </View>
             <View style={styles.stepsContainer}>
               {steps.map((step, i) => (
@@ -243,12 +378,16 @@ export function ChatScreen() {
           </Card>
         )}
 
-        {/* Agent Message (analysis answer) */}
+        {/* Agent Message (analysis answer / conversational) */}
         {isAnswered && agentMessage && (
-          <Card style={styles.agentCard}>
+          <Card style={[
+            styles.agentCard,
+            intentClass === 'safety' && { borderColor: '#F59E0B55', borderWidth: 1.5 },
+          ]}>
             <View style={styles.agentCardHeader}>
               <MaterialCommunityIcons name="brain" size={18} color={colors.primaryLight} />
               <Text style={styles.agentLabel}>Kawula ANALYSIS</Text>
+              {intentClass && <IntentBadge intentClass={intentClass} />}
             </View>
             <Text style={styles.agentMessageText}>{agentMessage}</Text>
           </Card>
@@ -314,7 +453,7 @@ export function ChatScreen() {
 
 
         {/* Empty State */}
-        {steps.length === 0 && runState === 'idle' && !isHistoryLoading && historyMessages.length === 0 && (
+        {steps.length === 0 && runState === 'idle' && !isHistoryLoading && threadScopedHistoryMessages.length === 0 && (
           <View style={styles.emptyState}>
             <View style={styles.emptyStateOrb}>
               <MaterialCommunityIcons name="brain" size={40} color={colors.primaryLight} />
@@ -473,6 +612,17 @@ const styles = StyleSheet.create({
   statusBar: {
     alignItems: 'center',
     marginBottom: spacing.sm,
+  },
+  proactiveFeedSection: {
+    gap: spacing.md,
+  },
+  proactiveFeedCards: {
+    gap: spacing.md,
+  },
+  proactiveFeedLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   statusIndicator: {
     flexDirection: 'row',

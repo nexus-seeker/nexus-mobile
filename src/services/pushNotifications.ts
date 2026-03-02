@@ -1,11 +1,21 @@
 import { OneSignal, NotificationWillDisplayEvent, NotificationClickEvent } from 'react-native-onesignal';
-import { getRouteForNotification, validateDeepLink } from './notifications/router';
+import { getRouteForNotification, getRouteForDeepLink } from './notifications/router';
 import { getPreferences, savePreferences } from './notifications/storage';
-import { NotificationCategory } from './notifications/types';
+import { NotificationCategory, type NotificationPayload } from './notifications/types';
 
 const ONE_SIGNAL_APP_ID = 'e7b51ed4-d08f-4224-8fc4-8868d6024f39';
 
 let navigationRef: any = null;
+
+const NOTIFICATION_CATEGORY_VALUES = new Set<string>(Object.values(NotificationCategory));
+
+const toNotificationCategory = (value: unknown): NotificationCategory => {
+  if (typeof value === 'string' && NOTIFICATION_CATEGORY_VALUES.has(value)) {
+    return value as NotificationCategory;
+  }
+
+  return NotificationCategory.SYSTEM;
+};
 
 export const setNotificationNavigationRef = (ref: any) => {
   navigationRef = ref;
@@ -72,7 +82,9 @@ const setupNotificationHandlers = () => {
 };
 
 const handleNotificationTap = (notification: any) => {
-  const { additionalData } = notification;
+  const additionalData =
+    (notification.additionalData as Partial<NotificationPayload['data']> & { category?: string }) ||
+    null;
 
   if (!additionalData) {
     console.warn('[PushNotifications] No additional data in notification');
@@ -80,24 +92,27 @@ const handleNotificationTap = (notification: any) => {
   }
 
   // Handle deep link if present
-  if (additionalData.deeplink && validateDeepLink(additionalData.deeplink)) {
-    // Parse and navigate to deep link
-    const url = new URL(additionalData.deeplink);
-    const screen = url.hostname;
-    const pathParts = url.pathname.split('/').filter(Boolean);
-
-    if (navigationRef) {
-      navigationRef.navigate(screen, { id: pathParts[0] });
+  if (additionalData.deeplink) {
+    const deepLinkRoute = getRouteForDeepLink(additionalData.deeplink);
+    if (navigationRef && deepLinkRoute) {
+      navigationRef.navigate(deepLinkRoute.screen, deepLinkRoute.params);
+      return;
     }
-    return;
   }
 
   // Handle action-based routing
   const route = getRouteForNotification({
     title: notification.title || '',
     body: notification.body || '',
-    category: additionalData.category || NotificationCategory.SYSTEM,
-    data: additionalData,
+    category: toNotificationCategory(additionalData.category),
+    data: {
+      action: additionalData.action || '',
+      screen: additionalData.screen,
+      params: additionalData.params,
+      deeplink: additionalData.deeplink,
+      threadId: additionalData.threadId,
+      recommendationId: additionalData.recommendationId,
+    },
   });
 
   if (route && navigationRef) {
