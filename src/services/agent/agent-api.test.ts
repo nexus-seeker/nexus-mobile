@@ -7,6 +7,7 @@ import {
   fetchReceipts,
   getSSEUrl,
   openAgentStream,
+  REJECTION_RECOVERY_ACTION_TYPES,
   updatePolicy,
 } from './agent-api';
 
@@ -456,6 +457,61 @@ describe('openAgentStream', () => {
     });
   });
 
+  it('normalizes complete events while preserving recovery payload', () => {
+    const source = {
+      onmessage: null as ((event: { data?: string }) => void) | null,
+      onerror: null as (() => void) | null,
+      close: jest.fn(),
+    };
+
+    (globalThis as any).EventSource = jest.fn(() => source);
+
+    const onEvent = jest.fn();
+
+    openAgentStream('run-recovery', {
+      onEvent,
+      onError: jest.fn(),
+    });
+
+    source.onmessage?.({
+      data: JSON.stringify({
+        type: 'complete',
+        result: {
+          runId: 'run-recovery',
+          steps: [],
+          rejection: {
+            reason: 'Invalid amountLamports',
+            policyField: 'amount_lamports',
+          },
+          recovery: {
+            summary: 'Amount parsed as 0 lamports.',
+            likelyIntent: 'Transfer 0.5 SOL to bene.skr',
+            suggestedActions: [
+              {
+                id: 'retry_fixed_amount',
+                label: 'Retry with 0.5 SOL',
+                type: 'retry_intent',
+                intent: 'tf to bene.skr 0.5 sol',
+              },
+            ],
+            recommendedActionId: 'retry_fixed_amount',
+          },
+        },
+      }),
+    });
+
+    expect(onEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'complete',
+        result: expect.objectContaining({
+          recovery: expect.objectContaining({
+            recommendedActionId: 'retry_fixed_amount',
+          }),
+        }),
+      }),
+    );
+  });
+
   it('uses XMLHttpRequest fallback when EventSource is unavailable', () => {
     const xhr = createMockXHR();
 
@@ -490,6 +546,12 @@ describe('openAgentStream', () => {
 
     expect(onEvent).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'step', node: 'crlf' }),
+    );
+  });
+
+  it('exports the supported rejection recovery action types', () => {
+    expect(REJECTION_RECOVERY_ACTION_TYPES).toEqual(
+      expect.arrayContaining(['retry_intent', 'open_policy', 'open_onboarding']),
     );
   });
 });

@@ -120,4 +120,78 @@ describe("createPolicyVaultClient", () => {
     expect(getAccountInfo).toHaveBeenCalledTimes(1);
     expect(compiledInstructionCount).toBe(2);
   });
+
+  it("parses policy vault accounts that include protocol_caps", async () => {
+    const client = createPolicyVaultClient({
+      programId: "DxV7vXf919YddC74X726PpsrPpHLXNZtdBsk6Lweh3HJ",
+    });
+
+    const discriminator = Buffer.from([180, 22, 67, 48, 87, 214, 158, 120]);
+    const owner = Buffer.alloc(32, 9);
+    const dailyMaxLamports = Buffer.alloc(8);
+    dailyMaxLamports.writeBigUInt64LE(500_000_000n);
+    const currentSpendLamports = Buffer.alloc(8);
+    currentSpendLamports.writeBigUInt64LE(100_000_000n);
+    const lastResetTs = Buffer.alloc(8);
+    lastResetTs.writeBigInt64LE(1_700_000_000n);
+
+    const allowedProtocolsCount = Buffer.alloc(4);
+    allowedProtocolsCount.writeUInt32LE(2);
+    const jupiter = Buffer.from("jupiter", "utf8");
+    const jupiterLen = Buffer.alloc(4);
+    jupiterLen.writeUInt32LE(jupiter.length);
+    const splTransfer = Buffer.from("spl_transfer", "utf8");
+    const splTransferLen = Buffer.alloc(4);
+    splTransferLen.writeUInt32LE(splTransfer.length);
+
+    const protocolCapsCount = Buffer.alloc(4);
+    protocolCapsCount.writeUInt32LE(1);
+    const capProtocol = Buffer.from("jupiter", "utf8");
+    const capProtocolLen = Buffer.alloc(4);
+    capProtocolLen.writeUInt32LE(capProtocol.length);
+    const capMaxLamports = Buffer.alloc(8);
+    capMaxLamports.writeBigUInt64LE(150_000_000n);
+    const capCurrentSpend = Buffer.alloc(8);
+    capCurrentSpend.writeBigUInt64LE(100_000_000n);
+
+    const nextReceiptId = Buffer.alloc(8);
+    nextReceiptId.writeBigUInt64LE(2n);
+    const isActive = Buffer.from([1]);
+    const bump = Buffer.from([255]);
+
+    const accountData = Buffer.concat([
+      discriminator,
+      owner,
+      dailyMaxLamports,
+      currentSpendLamports,
+      lastResetTs,
+      allowedProtocolsCount,
+      jupiterLen,
+      jupiter,
+      splTransferLen,
+      splTransfer,
+      protocolCapsCount,
+      capProtocolLen,
+      capProtocol,
+      capMaxLamports,
+      capCurrentSpend,
+      nextReceiptId,
+      isActive,
+      bump,
+    ]);
+
+    const fetched = await client.fetchPolicy({
+      authorityPublicKey: "EP4C7RTzhTPqTZZ8fUzfSu443QawGfDUDYjKgWFPfBfZ",
+      connection: {
+        getAccountInfo: jest.fn().mockResolvedValue({ data: accountData }),
+      } as never,
+    });
+
+    expect(fetched).toEqual({
+      dailyLimitSol: 0.5,
+      dailySpentSol: 0.1,
+      allowedProtocols: ["JUPITER", "SPL_TRANSFER"],
+      isActive: true,
+    });
+  });
 });

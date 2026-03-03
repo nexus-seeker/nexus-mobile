@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -22,14 +22,17 @@ import { type RootStackParamList } from '../navigators/AppNavigator';
 import { useAgentRun } from '../hooks/useAgentRun';
 import { useHistory } from '../hooks/useHistory';
 import { useProactiveFeed } from '../hooks/useProactiveFeed';
+import { useConversationThreads } from '../hooks/useConversationThreads';
 import { StepCard } from '../components/StepCard';
 import { ApprovalSheet } from '../components/ApprovalSheet';
 import { ProactiveCard } from '../components/ProactiveCard';
 import { Button, Card, Input, Text } from '../components/ui';
+import { createNewThreadId } from '../utils/thread-id';
 import { colors, spacing, radii, shadows, typography } from '../theme/shadcn-theme';
 import type {
   RecommendationActionType,
   RecommendationFeedbackOutcome,
+  RejectionRecoveryActionDto,
 } from '../services/agent/agent-api';
 
 const SUGGESTIONS = [
@@ -38,6 +41,12 @@ const SUGGESTIONS = [
   'Analyze my wallet activity',
   'Swap 0.1 SOL to USDC',
 ];
+
+const SUPPORTED_RECOVERY_ACTION_TYPES = [
+  'retry_intent',
+  'open_policy',
+  'open_onboarding',
+] as const;
 
 type IntentClass = 'casual' | 'read' | 'action' | 'safety' | 'learn' | 'complex';
 
@@ -121,6 +130,10 @@ function getHistoryRoleLabel(role: string): string {
   return role.toUpperCase();
 }
 
+function formatThreadUpdatedAt(updatedAt: number): string {
+  return new Date(updatedAt).toLocaleString();
+}
+
 export function ChatScreen() {
   const { selectedAccount } = useAuthorization();
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -128,6 +141,8 @@ export function ChatScreen() {
   const insets = useSafeAreaInsets();
   const [intent, setIntent] = useState('');
   const [isApprovalSheetVisible, setIsApprovalSheetVisible] = useState(false);
+  const [isThreadsDrawerVisible, setIsThreadsDrawerVisible] = useState(false);
+  const [activeThreadId, setActiveThreadId] = useState<string | undefined>(route.params?.threadId);
   const {
     runState,
     currentIntent,
@@ -136,42 +151,59 @@ export function ChatScreen() {
     confirmedSig,
     agentMessage,
     error,
+    activeRunId,
     executeIntent,
     approveTransaction,
     resetRun,
   } = useAgentRun();
 
   const pubkey = selectedAccount?.publicKey.toBase58();
-  const threadId = route.params?.threadId;
+  const incomingThreadId = route.params?.threadId;
   const recommendationIdFromRoute = route.params?.recommendationId;
+  const {
+    data: conversationThreads,
+    isLoading: isConversationThreadsLoading,
+    error: conversationThreadsError,
+  } = useConversationThreads(pubkey);
   const { data: historyData, isLoading: isHistoryLoading } = useHistory(pubkey);
   const {
     data: proactiveFeed,
     isLoading: isProactiveFeedLoading,
     sendFeedback,
     isSendingFeedback,
-  } = useProactiveFeed(pubkey, threadId);
+  } = useProactiveFeed(pubkey, activeThreadId);
+
+  useEffect(() => {
+    if (!incomingThreadId) {
+      return;
+    }
+
+    setActiveThreadId(incomingThreadId);
+    setIntent('');
+    setIsApprovalSheetVisible(false);
+    resetRun();
+  }, [incomingThreadId, resetRun]);
+
+  useEffect(() => {
+    if (!activeThreadId) {
+      setActiveThreadId(createNewThreadId(pubkey));
+    }
+  }, [activeThreadId, pubkey]);
+
   const historyMessages = historyData?.messages ?? [];
-  const threadScopedHistoryMessages = threadId
-    ? historyMessages.filter((message) => message.threadId === threadId)
-    : historyMessages;
-  const shouldShowPersistedHistory = !isHistoryLoading && runState === 'idle' && steps.length === 0;
+  const threadScopedHistoryMessages = activeThreadId
+    ? historyMessages.filter((message) => message.threadId === activeThreadId && message.runId !== activeRunId)
+    : [];
+  const shouldShowPersistedHistory = !isHistoryLoading; // Always show history if loaded
   const persistedHistoryPreview = [...threadScopedHistoryMessages]
-    .sort((a, b) => {
-      if (a.timestamp !== b.timestamp) {
-        return b.timestamp - a.timestamp;
-      }
-      return b.id.localeCompare(a.id);
-    })
-    .slice(0, 8)
-    .reverse();
+    .sort((a, b) => a.timestamp - b.timestamp); // Chronological order (oldest first)
 
   // Derive the intent class from the classify_intent step (streamed from agent)
   const intentClass = steps
     .find((s) => s.node === 'classify_intent')
     ?.payload?.intentClass as IntentClass | undefined;
   const shortPubkey = pubkey
-    ? `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}.skr`
+    ? `${pubkey.slice(0, 4)}...${pubkey.slice(-4)}`
     : 'Not connected';
   const proactiveRecommendations = recommendationIdFromRoute
     ? [...(proactiveFeed ?? [])].sort((a, b) => {
@@ -213,10 +245,17 @@ export function ChatScreen() {
 
   async function handleSend() {
     const trimmed = intent.trim();
-    if (!trimmed || runState === 'running') return;
+    if (
+      !trimmed ||
+      runState === 'running' ||
+      runState === 'awaiting_approval' ||
+      runState === 'signing'
+    ) {
+      return;
+    }
     setIntent('');
     setIsApprovalSheetVisible(false);
-    await executeIntent(trimmed, threadId);
+    await executeIntent(trimmed, activeThreadId);
   }
 
   function handleReset() {
@@ -229,13 +268,44 @@ export function ChatScreen() {
   const isSigning = runState === 'signing';
   const isAnswered = runState === 'answered';
   const rejectionField = result?.rejection?.policyField;
+  const recoveryActions = (result?.recovery?.suggestedActions ?? [])
+    .filter((action): action is RejectionRecoveryActionDto => {
+      if (!action?.type) {
+        return false;
+      }
+
+      if (
+        !SUPPORTED_RECOVERY_ACTION_TYPES.includes(
+          action.type as (typeof SUPPORTED_RECOVERY_ACTION_TYPES)[number],
+        )
+      ) {
+        return false;
+      }
+
+      if (action.type === 'retry_intent') {
+        return !!action.intent;
+      }
+
+      return true;
+    })
+    .slice(0, 3);
+  const hasStructuredRecoveryActions = recoveryActions.length > 0;
+  const rejectedRecoveryMessage =
+    typeof agentMessage === 'string' && agentMessage.trim().length > 0
+      ? agentMessage
+      : (result?.recovery?.summary ?? null);
   const showDemoSafeTransfer =
     runState === 'rejected' &&
+    !hasStructuredRecoveryActions &&
     !!pubkey &&
     (rejectionField === 'jupiter' ||
       (rejectionField === 'tx_assembly' &&
         (error?.includes('InvalidProgramForExecution') ?? false)));
-  const showOnboardingPrompt = runState === 'rejected' && rejectionField === 'not_onboarded' && !!pubkey;
+  const showOnboardingPrompt =
+    runState === 'rejected' &&
+    !hasStructuredRecoveryActions &&
+    rejectionField === 'not_onboarded' &&
+    !!pubkey;
 
   // Navigate back to the onboarding gate so the user can set up properly
   function handleGoToSetup() {
@@ -247,7 +317,56 @@ export function ChatScreen() {
     if (!pubkey) return;
     setIsApprovalSheetVisible(false);
     setIntent('');
-    await executeIntent(`Transfer 0.001 SOL to ${pubkey}`, threadId);
+    await executeIntent(`Transfer 0.001 SOL to ${pubkey}`, activeThreadId);
+  }
+
+  async function handleRecoveryAction(action: RejectionRecoveryActionDto) {
+    if (!action.type) {
+      return;
+    }
+
+    switch (action.type) {
+      case 'retry_intent':
+        if (!action.intent) {
+          return;
+        }
+        setIsApprovalSheetVisible(false);
+        setIntent('');
+        await executeIntent(action.intent, activeThreadId);
+        return;
+      case 'open_policy':
+        navigation.navigate('Policy');
+        return;
+      case 'open_onboarding':
+        navigation.navigate('Onboarding');
+        return;
+      default:
+        return;
+    }
+  }
+
+  function handleOpenThreadsDrawer() {
+    setIsThreadsDrawerVisible(true);
+  }
+
+  function handleCloseThreadsDrawer() {
+    setIsThreadsDrawerVisible(false);
+  }
+
+  function handleStartNewThread() {
+    setActiveThreadId(createNewThreadId(pubkey));
+    setIntent('');
+    setIsApprovalSheetVisible(false);
+    resetRun();
+    setIsThreadsDrawerVisible(false);
+  }
+
+  function handleSelectThread(threadId: string) {
+    setActiveThreadId(threadId);
+    setIntent('');
+    setIsApprovalSheetVisible(false);
+    resetRun();
+    setIsThreadsDrawerVisible(false);
   }
 
   return (
@@ -259,33 +378,47 @@ export function ChatScreen() {
       <View style={[styles.header, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 20 : 0) + spacing.md }]}>
         <View style={styles.headerContent}>
 
-          {/* Left: Avatar/Profile */}
+          <View style={styles.headerTopRow}>
+            <Pressable
+              style={styles.headerIconButton}
+              onPress={handleOpenThreadsDrawer}
+              accessibilityLabel="Open conversations"
+            >
+              <MaterialCommunityIcons name="menu" size={18} color={colors.foreground} />
+            </Pressable>
+
+            <View style={styles.headerTitleContainer}>
+              <MaterialCommunityIcons
+                name="hexagon-multiple"
+                size={18}
+                color={colors.primaryLight}
+                style={{ marginRight: spacing.xs }}
+              />
+              <Text variant="h4" style={styles.headerTitleText}>Kawula</Text>
+            </View>
+
+            <Pressable
+              style={styles.headerIconButton}
+              onPress={() => navigation.navigate("Policy")}
+              accessibilityLabel="Open policy"
+            >
+              <MaterialCommunityIcons name="shield-check" size={18} color={colors.foreground} />
+            </Pressable>
+          </View>
+
           <Pressable
             style={styles.walletChip}
             onPress={() => navigation.navigate("Profile")}
+            accessibilityLabel="Open profile"
           >
-            <View style={[styles.statusDot, { backgroundColor: selectedAccount ? colors.success : colors.error }]} />
-            <Text style={styles.walletChipText}>{shortPubkey}</Text>
-          </Pressable>
-
-          {/* Center: Kawula Brand */}
-          <View style={styles.headerTitleContainer}>
-            <MaterialCommunityIcons
-              name="hexagon-multiple"
-              size={20}
-              color={colors.primaryLight}
-              style={{ marginRight: spacing.sm }}
-            />
-            <Text variant="h4" style={{ letterSpacing: 2 }}>Kawula</Text>
-          </View>
-
-          {/* Right: Policy Shield */}
-          <Pressable
-            style={styles.policyChip}
-            onPress={() => navigation.navigate("Policy")}
-          >
-            <MaterialCommunityIcons name="shield-check" size={14} color={colors.foreground} />
-            <Text style={styles.policyChipText}>Policy</Text>
+            <View style={styles.walletIdentity}>
+              <View style={[styles.walletStatusDot, { backgroundColor: selectedAccount ? colors.success : colors.error }]} />
+              <View>
+                <Text style={styles.walletLabel}>Profile Wallet</Text>
+                <Text style={styles.walletChipText}>{shortPubkey}</Text>
+              </View>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={18} color={colors.foregroundMuted} />
           </Pressable>
 
         </View>
@@ -330,20 +463,33 @@ export function ChatScreen() {
         )}
 
         {shouldShowPersistedHistory && persistedHistoryPreview.length > 0 && (
-          <Card style={styles.historyCard}>
-            <View style={styles.agentCardHeader}>
-              <MaterialCommunityIcons name="history" size={18} color={colors.primaryLight} />
-              <Text style={styles.agentLabel}>PERSISTED HISTORY</Text>
-            </View>
-            <View style={styles.historyMessagesContainer}>
-              {persistedHistoryPreview.map((message) => (
-                <View key={message.id} style={styles.historyMessageRow}>
-                  <Text style={styles.historyRoleLabel}>{getHistoryRoleLabel(message.role)}</Text>
-                  <Text>{message.content}</Text>
-                </View>
-              ))}
-            </View>
-          </Card>
+          <View style={styles.historyMessagesContainer}>
+            {persistedHistoryPreview.map((message) => {
+              if (message.role === 'user') {
+                return (
+                  <View key={message.id} style={styles.userBubbleContainer}>
+                    <View style={styles.userCardHeader}>
+                      <Text style={styles.userLabel}>YOU</Text>
+                      <MaterialCommunityIcons name="account" size={16} color={colors.foregroundMuted} />
+                    </View>
+                    <View style={styles.userBubble}>
+                      <Text style={styles.userMessageText}>{message.content}</Text>
+                    </View>
+                  </View>
+                );
+              }
+
+              return (
+                <Card key={message.id} style={styles.agentCard}>
+                  <View style={styles.agentCardHeader}>
+                    <MaterialCommunityIcons name="brain" size={18} color={colors.primaryLight} />
+                    <Text style={styles.agentLabel}>Kawula ANALYSIS</Text>
+                  </View>
+                  <Text style={styles.agentMessageText}>{message.content}</Text>
+                </Card>
+              );
+            })}
+          </View>
         )}
 
         {/* User Message Bubble */}
@@ -405,6 +551,29 @@ export function ChatScreen() {
         )}
 
 
+
+        {runState === 'rejected' && rejectedRecoveryMessage && (
+          <Card variant="outline" style={styles.fallbackCard}>
+            <MaterialCommunityIcons name="lifebuoy" size={28} color={colors.primary} />
+            <Text style={styles.fallbackTitle}>Let&apos;s recover</Text>
+            <Text style={styles.agentMessageText}>{rejectedRecoveryMessage}</Text>
+            {recoveryActions.length > 0 && (
+              <View style={styles.recoveryActionsContainer}>
+                {recoveryActions.map((action, index) => (
+                  <Button
+                    key={action.id ?? `${action.type}-${index}`}
+                    onPress={() => {
+                      void handleRecoveryAction(action);
+                    }}
+                    style={styles.fallbackButton}
+                  >
+                    {action.label ?? 'Try suggested action'}
+                  </Button>
+                ))}
+              </View>
+            )}
+          </Card>
+        )}
 
         {showOnboardingPrompt && (
           <Card variant="outline" style={styles.fallbackCard}>
@@ -501,13 +670,13 @@ export function ChatScreen() {
             value={intent}
             onChangeText={setIntent}
             containerStyle={styles.input}
-            editable={!isRunning && !isSigning}
+            editable={!isRunning && !isSigning && !showApproval}
             onSubmitEditing={handleSend}
             leftIcon={<MaterialCommunityIcons name="microphone" size={20} color={colors.foregroundMuted} />}
           />
           <Pressable
             onPress={handleSend}
-            disabled={isRunning || isSigning || !intent.trim()}
+            disabled={isRunning || isSigning || showApproval || !intent.trim()}
             style={({ pressed }) => [
               styles.sendButtonWrapper,
               pressed && styles.sendButtonPressed,
@@ -529,6 +698,62 @@ export function ChatScreen() {
           </Pressable>
         </View>
       </View>
+
+      {isThreadsDrawerVisible && (
+        <View style={styles.threadsDrawerOverlay}>
+          <View style={[styles.threadsDrawerPanel, { paddingTop: insets.top + spacing.md }]}>
+            <View style={styles.threadsDrawerHeader}>
+              <Text variant="h4">Conversations</Text>
+              <Pressable style={styles.threadsDrawerCloseButton} onPress={handleCloseThreadsDrawer}>
+                <MaterialCommunityIcons name="close" size={18} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            <Button onPress={handleStartNewThread} style={styles.threadsDrawerNewChatButton}>
+              New Chat
+            </Button>
+
+            {isConversationThreadsLoading ? (
+              <View style={styles.threadsDrawerEmptyState}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text variant="muted">Loading conversations...</Text>
+              </View>
+            ) : conversationThreadsError ? (
+              <View style={styles.threadsDrawerEmptyState}>
+                <Text style={styles.threadsDrawerErrorText}>Failed to load conversations</Text>
+              </View>
+            ) : (conversationThreads ?? []).length === 0 ? (
+              <View style={styles.threadsDrawerEmptyState}>
+                <Text variant="muted">No saved conversations yet.</Text>
+              </View>
+            ) : (
+              <ScrollView contentContainerStyle={styles.threadsDrawerListContent}>
+                {(conversationThreads ?? []).map((thread) => {
+                  const isActiveThread = thread.id === activeThreadId;
+
+                  return (
+                    <Pressable
+                      key={thread.id}
+                      onPress={() => handleSelectThread(thread.id)}
+                      style={({ pressed }) => [
+                        styles.threadsDrawerRow,
+                        isActiveThread && styles.threadsDrawerRowActive,
+                        pressed && styles.threadsDrawerRowPressed,
+                      ]}
+                    >
+                      <Text style={styles.threadsDrawerTitle}>{thread.title}</Text>
+                      <Text variant="muted" style={styles.threadsDrawerMeta}>
+                        Updated {formatThreadUpdatedAt(thread.updatedAt)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </View>
+          <Pressable style={styles.threadsDrawerBackdrop} onPress={handleCloseThreadsDrawer} />
+        </View>
+      )}
 
       {/* Approval Sheet */}
       <ApprovalSheet
@@ -558,48 +783,70 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   headerContent: {
+    gap: spacing.sm,
+  },
+  headerTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.full,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
+    minHeight: 34,
   },
-  iconButton: {
-    padding: spacing.xs,
+  headerTitleText: {
+    letterSpacing: 1.5,
+  },
+  headerIconButton: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   walletChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.backgroundTertiary,
+    justifyContent: 'space-between',
+    backgroundColor: colors.backgroundSecondary,
     borderRadius: radii.full,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
+    minHeight: 44,
+  },
+  walletIdentity: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  walletStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  walletLabel: {
+    color: colors.foregroundMuted,
+    fontSize: 10,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
   },
   walletChipText: {
     color: colors.foreground,
     fontSize: typography.sizeXs,
     fontFamily: typography.fontMono,
-    marginLeft: spacing.xs,
-  },
-  policyChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.backgroundTertiary,
-    borderRadius: radii.full,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  policyChipText: {
-    color: colors.foreground,
-    fontSize: typography.sizeXs,
-    fontWeight: typography.weightMedium,
-    marginLeft: spacing.xs,
   },
   chatArea: {
     flex: 1,
@@ -746,6 +993,9 @@ const styles = StyleSheet.create({
   fallbackButton: {
     marginTop: spacing.xs,
   },
+  recoveryActionsContainer: {
+    gap: spacing.xs,
+  },
   approvalSection: {
     gap: spacing.md,
   },
@@ -796,6 +1046,85 @@ const styles = StyleSheet.create({
   inputContainer: {
     padding: spacing.lg,
     paddingTop: spacing.sm,
+  },
+  threadsDrawerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+  },
+  threadsDrawerBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  threadsDrawerPanel: {
+    width: '84%',
+    maxWidth: 360,
+    backgroundColor: colors.background,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  threadsDrawerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  threadsDrawerCloseButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundTertiary,
+  },
+  threadsDrawerNewChatButton: {
+    marginTop: spacing.xs,
+  },
+  threadsDrawerEmptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xl,
+  },
+  threadsDrawerErrorText: {
+    color: colors.error,
+    fontSize: typography.sizeSm,
+    textAlign: 'center',
+  },
+  threadsDrawerListContent: {
+    gap: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  threadsDrawerRow: {
+    backgroundColor: colors.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+  },
+  threadsDrawerRowActive: {
+    borderColor: colors.primaryLight,
+    backgroundColor: colors.primaryMuted,
+  },
+  threadsDrawerRowPressed: {
+    opacity: 0.85,
+  },
+  threadsDrawerTitle: {
+    color: colors.foreground,
+    fontSize: typography.sizeSm,
+    fontWeight: typography.weightSemibold,
+  },
+  threadsDrawerMeta: {
+    fontSize: typography.sizeXs,
   },
   inputRow: {
     flexDirection: 'row',

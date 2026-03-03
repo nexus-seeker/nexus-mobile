@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
     executeAgent,
     type AgentRunResult,
@@ -23,6 +24,7 @@ export type AgentRunState =
     | 'error';
 
 export function useAgentRun() {
+    const queryClient = useQueryClient();
     const { selectedAccount, authorizeSession } = useAuthorization();
     const closeStreamRef = useRef<(() => void) | null>(null);
     const streamRunTokenRef = useRef<number | null>(null);
@@ -38,6 +40,7 @@ export function useAgentRun() {
     const [confirmedSig, setConfirmedSig] = useState<string | null>(null);
     const [agentMessage, setAgentMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [activeRunId, setActiveRunId] = useState<string | null>(null);
 
     const isStillWorkingStep = useCallback(
         (step: StepEvent) =>
@@ -84,6 +87,7 @@ export function useAgentRun() {
         setConfirmedSig(null);
         setAgentMessage(null);
         setError(null);
+        setActiveRunId(null);
     }, [stopActiveRun]);
 
     useEffect(() => {
@@ -116,7 +120,9 @@ export function useAgentRun() {
                 setSteps([]);
                 setResult(null);
                 setConfirmedSig(null);
+                setAgentMessage(null);
                 setError(null);
+                setActiveRunId(null);
 
                 const pubkey = selectedAccount.publicKey.toBase58();
                 const executeResponse = await executeAgent(intent, pubkey, threadId);
@@ -127,6 +133,7 @@ export function useAgentRun() {
 
                 setSteps(executeResponse.steps ?? []);
                 setAgentMessage(null);
+                setActiveRunId(executeResponse.runId);
 
                 if (!executeResponse.runId) {
                     throw new Error('Agent run could not be started');
@@ -140,6 +147,7 @@ export function useAgentRun() {
                     }
 
                     stopActiveRun(runToken);
+                    removeStillWorkingStep();
                     setRunState('error');
                     setError('Agent run timed out. Please retry your intent.');
                 };
@@ -216,6 +224,9 @@ export function useAgentRun() {
                             if (finalResult.rejection) {
                                 setRunState('rejected');
                                 setError(finalResult.rejection.reason);
+                                setAgentMessage(
+                                    finalResult.agentMessage ?? finalResult.recovery?.summary ?? null,
+                                );
                             } else if (finalResult.unsignedTx) {
                                 setRunState('awaiting_approval');
                             } else if (finalResult.agentMessage) {
@@ -226,6 +237,9 @@ export function useAgentRun() {
                                 setRunState('error');
                                 setError('Agent run completed without a transaction. Please retry.');
                             }
+
+                            void queryClient.invalidateQueries({ queryKey: ['history'] });
+                            void queryClient.invalidateQueries({ queryKey: ['conversationThreads'] });
                         }
                     },
                     onError: (streamError) => {
@@ -234,6 +248,7 @@ export function useAgentRun() {
                         }
 
                         stopActiveRun(runToken);
+                        removeStillWorkingStep();
                         setRunState('error');
                         setError(streamError.message || 'Agent stream failed. Please retry.');
                     },
@@ -249,7 +264,7 @@ export function useAgentRun() {
                 setRunState('error');
             }
         },
-        [selectedAccount, stopActiveRun, isStillWorkingStep, removeStillWorkingStep],
+        [selectedAccount, queryClient, stopActiveRun, isStillWorkingStep, removeStillWorkingStep],
     );
 
     // ─── Approve & Sign Transaction ──────────────────────────────
@@ -298,6 +313,7 @@ export function useAgentRun() {
         confirmedSig,
         agentMessage,
         error,
+        activeRunId,
 
         // Actions
         executeIntent,

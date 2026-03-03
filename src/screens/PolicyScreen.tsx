@@ -66,27 +66,6 @@ function ToggleRow({
   );
 }
 
-// Stat Card
-function StatCard({
-  icon,
-  label,
-  value,
-  color = colors.primary,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-  color?: string;
-}) {
-  return (
-    <Card style={[styles.statCard, { borderColor: color + '40' }]}>
-      <MaterialCommunityIcons name={icon as any} size={24} color={color} />
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </Card>
-  );
-}
-
 export function PolicyScreen() {
   const {
     policy,
@@ -116,18 +95,14 @@ export function PolicyScreen() {
   const [isActive, setIsActive] = useState(policy.isActive ?? true);
   const [lastSuccess, setLastSuccess] = useState<string | null>(null);
 
-  // Sync state when policy changes - deferred to avoid cascading render warning
+  // Sync draft form state when policy context changes.
   useEffect(() => {
-    // Defer state updates to next tick to avoid synchronous setState during render
-    const timeoutId = setTimeout(() => {
-      setDailyLimitSol(String(policy.dailyLimitSol));
-      setAllowedJupiter(policy.allowedProtocols.includes("JUPITER"));
-      setAllowedTransfers(policy.allowedProtocols.includes("SPL_TRANSFER"));
-      setAllowedMultiSend(policy.allowedProtocols.includes("MULTI_SEND"));
-      setAllowedMarinade(policy.allowedProtocols.includes("MARINADE"));
-      setIsActive(policy.isActive ?? true);
-    }, 0);
-    return () => clearTimeout(timeoutId);
+    setDailyLimitSol(String(policy.dailyLimitSol));
+    setAllowedJupiter(policy.allowedProtocols.includes("JUPITER"));
+    setAllowedTransfers(policy.allowedProtocols.includes("SPL_TRANSFER"));
+    setAllowedMultiSend(policy.allowedProtocols.includes("MULTI_SEND"));
+    setAllowedMarinade(policy.allowedProtocols.includes("MARINADE"));
+    setIsActive(policy.isActive ?? true);
   }, [policy]);
 
   const parsedDailyLimit = useMemo(
@@ -137,35 +112,63 @@ export function PolicyScreen() {
 
   const isLimitInvalid = !Number.isFinite(parsedDailyLimit) || parsedDailyLimit < 0;
 
+  const draftProtocols = useMemo(() => {
+    const protocols: PolicyProtocol[] = [];
+
+    if (allowedJupiter) {
+      protocols.push("JUPITER");
+    }
+
+    if (allowedTransfers) {
+      protocols.push("SPL_TRANSFER");
+    }
+
+    if (allowedMultiSend) {
+      protocols.push("MULTI_SEND");
+    }
+
+    if (allowedMarinade) {
+      protocols.push("MARINADE");
+    }
+
+    return protocols;
+  }, [allowedJupiter, allowedTransfers, allowedMultiSend, allowedMarinade]);
+
+  const usagePercent = useMemo(() => {
+    if (policy.dailyLimitSol <= 0) {
+      return 0;
+    }
+
+    const ratio = (policy.dailySpentSol / policy.dailyLimitSol) * 100;
+    return Math.max(0, Math.min(ratio, 100));
+  }, [policy.dailyLimitSol, policy.dailySpentSol]);
+
+  const usageLabel = policy.dailyLimitSol <= 0 ? "No cap set" : `${usagePercent.toFixed(1)}% used`;
+
+  const hasChanges = useMemo(() => {
+    if (isLimitInvalid) {
+      return false;
+    }
+
+    const sameLimit = Math.abs(parsedDailyLimit - policy.dailyLimitSol) < 0.0001;
+    const currentIsActive = policy.isActive ?? true;
+    const draftKey = [...draftProtocols].sort().join("|");
+    const currentKey = [...policy.allowedProtocols].sort().join("|");
+
+    return !sameLimit || currentIsActive !== isActive || draftKey !== currentKey;
+  }, [draftProtocols, isActive, isLimitInvalid, parsedDailyLimit, policy.allowedProtocols, policy.dailyLimitSol, policy.isActive]);
+
   const onSavePolicy = async () => {
     clearPolicyError();
     setLastSuccess(null);
 
-    if (isLimitInvalid) {
+    if (isLimitInvalid || !hasChanges) {
       return;
-    }
-
-    const allowedProtocols: PolicyProtocol[] = [];
-
-    if (allowedJupiter) {
-      allowedProtocols.push("JUPITER");
-    }
-
-    if (allowedTransfers) {
-      allowedProtocols.push("SPL_TRANSFER");
-    }
-
-    if (allowedMultiSend) {
-      allowedProtocols.push("MULTI_SEND");
-    }
-
-    if (allowedMarinade) {
-      allowedProtocols.push("MARINADE");
     }
 
     const result = await savePolicy({
       dailyLimitSol: parsedDailyLimit,
-      allowedProtocols,
+      allowedProtocols: draftProtocols,
       isActive,
     });
 
@@ -190,49 +193,61 @@ export function PolicyScreen() {
 
   return (
     <ScrollView contentContainerStyle={[styles.screen, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 20 : 0) + spacing.md }]}>
-      {/* Header - solid */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.closeButton}>
-            <MaterialCommunityIcons name="close" size={24} color={colors.foreground} />
-          </Pressable>
-        </View>
-        <View style={styles.headerContent}>
-          <MaterialCommunityIcons name="shield" size={28} color={colors.foreground} />
-          <Text variant="h3" style={{ marginTop: spacing.sm }}>Permission Vault</Text>
-          <Text variant="muted" style={{ marginTop: spacing.xs, textAlign: 'center' }}>
-            Control your agent's permissions
+        <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
+          <MaterialCommunityIcons name="arrow-left" size={22} color={colors.foreground} />
+          <Text style={styles.backLabel}>Back</Text>
+        </Pressable>
+        <View style={styles.headerTitleBlock}>
+          <Text variant="h3">Policy Controls</Text>
+          <Text variant="muted" style={styles.headerSubtitle}>
+            Set safe spending boundaries for your agent.
           </Text>
         </View>
+        <View style={[styles.statusBadge, isActive ? styles.statusBadgeActive : styles.statusBadgePaused]}>
+          <View style={[styles.statusDot, isActive ? styles.statusDotActive : styles.statusDotPaused]} />
+          <Text style={styles.statusBadgeText}>{isActive ? "Active" : "Paused"}</Text>
+        </View>
       </View>
 
-      {/* Stats Row */}
-      <View style={styles.statsRow}>
-        <StatCard
-          icon="wallet"
-          label="Daily Limit"
-          value={`${policy.dailyLimitSol} SOL`}
-          color={colors.primary}
-        />
-        <StatCard
-          icon="cash-minus"
-          label="Spent Today"
-          value={`${policy.dailySpentSol.toFixed(4)} SOL`}
-          color={colors.secondary}
-        />
-        <StatCard
-          icon="shield-check"
-          label="Status"
-          value={isActive ? "Active" : "Paused"}
-          color={isActive ? colors.success : colors.error}
-        />
-      </View>
+      <Card style={styles.summaryCard}>
+        <View style={styles.summaryTopRow}>
+          <Text style={styles.summaryTitle}>Usage today</Text>
+          <Text style={styles.summaryUsage}>{usageLabel}</Text>
+        </View>
+        <Text style={styles.summaryAmount}>
+          {policy.dailySpentSol.toFixed(4)} / {Math.max(policy.dailyLimitSol, 0).toFixed(4)} SOL
+        </Text>
 
-      {/* Main Policy Card */}
-      <Card variant="outline" style={styles.policyCard}>
-        {/* Daily Limit Input */}
+        <View style={styles.progressTrack}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: usagePercent <= 0 ? "0%" : `${Math.max(usagePercent, 6)}%`,
+              },
+            ]}
+          />
+        </View>
+
+        <View style={styles.summaryMetaRow}>
+          <View style={styles.metaChip}>
+            <MaterialCommunityIcons name="shape-outline" size={14} color={colors.foregroundMuted} />
+            <Text style={styles.metaChipText}>{draftProtocols.length} protocols enabled</Text>
+          </View>
+          <View style={styles.metaChip}>
+            <MaterialCommunityIcons name="wallet-outline" size={14} color={colors.foregroundMuted} />
+            <Text style={styles.metaChipText}>Daily cap {Math.max(policy.dailyLimitSol, 0).toFixed(2)} SOL</Text>
+          </View>
+        </View>
+      </Card>
+
+      <Card variant="outline" style={styles.sectionCard}>
+        <Text style={styles.sectionHeading}>Daily spend limit</Text>
+        <Text style={styles.sectionSubtitle}>
+          Maximum SOL the agent can spend in a 24-hour window.
+        </Text>
         <View style={styles.inputGroup}>
-          <Text variant="muted" style={styles.inputLabel}>Daily Spend Limit (SOL)</Text>
           <Input
             value={dailyLimitSol}
             onChangeText={setDailyLimitSol}
@@ -240,19 +255,23 @@ export function PolicyScreen() {
             placeholder="0.00"
             icon={<MaterialCommunityIcons name="currency-usd" size={20} color={colors.foregroundMuted} />}
           />
-          {isLimitInvalid && (
+          {isLimitInvalid ? (
             <Text style={styles.errorHelper}>Enter a valid non-negative SOL limit</Text>
+          ) : (
+            <Text style={styles.helperText}>Set to 0 only if you want a read-only safety mode.</Text>
           )}
         </View>
+      </Card>
 
-        {/* Protocol Toggles */}
-        <View style={styles.sectionDivider}>
-          <Text style={styles.sectionTitle}>Allowed Protocols</Text>
+      <Card variant="outline" style={styles.sectionCard}>
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeading}>Allowed protocols</Text>
+          <Text style={styles.sectionCounter}>{draftProtocols.length}/4</Text>
         </View>
 
         <ToggleRow
           icon="swap-horizontal"
-          imageUrl="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbAbdY13310r/logo.png"
+          imageUrl="https://static.jup.ag/jup/icon.png"
           title="Jupiter Swaps"
           subtitle="Enable token swaps through Jupiter DEX"
           value={allowedJupiter}
@@ -278,17 +297,19 @@ export function PolicyScreen() {
 
         <ToggleRow
           icon="wave"
-          imageUrl="https://raw.githubusercontent.com/solana-labs/token-list/main/assets/mainnet/mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqkVmF8g/logo.png"
+          imageUrl="https://docs.marinade.finance/~gitbook/image?url=https%3A%2F%2F2385969780-files.gitbook.io%2F%7E%2Ffiles%2Fv0%2Fb%2Fgitbook-x-prod.appspot.com%2Fo%2Fspaces%252FHvhBFBu5z7MIlkYpgMXs%252Fuploads%252FnClg7nXeO1Bwpi2IymQY%252FMNDE.png%3Falt%3Dmedia%26token%3D7ac16f64-668c-4b84-85a3-dd801552e031&width=768&dpr=3&quality=100&sign=ecb74eb5&sv=2"
           title="Marinade Staking"
           subtitle="Liquid stake SOL → mSOL via Marinade Finance"
           value={allowedMarinade}
           onValueChange={setAllowedMarinade}
         />
+      </Card>
 
-        {/* Kill Switch */}
-        <View style={styles.sectionDivider}>
-          <Text style={styles.sectionTitle}>Emergency Controls</Text>
-        </View>
+      <Card variant="outline" style={styles.sectionCard}>
+        <Text style={styles.sectionHeading}>Emergency controls</Text>
+        <Text style={styles.sectionSubtitle}>
+          Pause all transaction execution instantly when needed.
+        </Text>
 
         <View style={styles.killSwitchContainer}>
           <View style={styles.toggleRowLeft}>
@@ -299,32 +320,34 @@ export function PolicyScreen() {
                 color={isActive ? colors.success : colors.error}
               />
             </View>
-            <View>
-              <Text style={styles.toggleTitle}>Policy Active</Text>
+            <View style={styles.toggleTextContainer}>
+              <Text style={styles.toggleTitle}>Policy active</Text>
               <Text style={styles.toggleSubtitle}>
-                {isActive ? "Agent can execute transactions" : "All transactions blocked"}
+                {isActive ? "Agent can execute allowed actions" : "All transaction execution blocked"}
               </Text>
             </View>
           </View>
           <Switch
             value={isActive}
             onValueChange={setIsActive}
-            trackColor={{ false: colors.error, true: colors.success }}
+            trackColor={{ false: colors.errorMuted, true: colors.successMuted }}
             thumbColor={colors.foreground}
           />
         </View>
+      </Card>
 
-        {/* Save Button */}
-        <Button
-          onPress={onSavePolicy}
-          loading={isSaving}
-          disabled={isSaving || isLimitInvalid}
-          style={styles.saveButton}
-        >
-          Save Policy
-        </Button>
+      <Card variant="outline" style={styles.actionsCard}>
+        <View style={styles.changeHintRow}>
+          <MaterialCommunityIcons
+            name={hasChanges ? "circle-edit-outline" : "check-decagram-outline"}
+            size={16}
+            color={hasChanges ? colors.warning : colors.success}
+          />
+          <Text style={[styles.changeHintText, { color: hasChanges ? colors.warning : colors.success }]}>
+            {hasChanges ? "Unsaved changes" : "No changes yet"}
+          </Text>
+        </View>
 
-        {/* Messages */}
         {lastError && (
           <View style={styles.messageError}>
             <MaterialCommunityIcons name="alert-circle" size={16} color={colors.error} />
@@ -341,20 +364,29 @@ export function PolicyScreen() {
 
         {lastSyncSignature && (
           <View style={styles.syncInfo}>
-            <Text variant="muted" style={styles.syncLabel}>Last Sync:</Text>
+            <Text variant="muted" style={styles.syncLabel}>Last sync:</Text>
             <Text style={styles.syncSignature}>
               {lastSyncSignature.slice(0, 8)}...{lastSyncSignature.slice(-8)}
             </Text>
           </View>
         )}
+
+        <Button
+          testID="policy-save-button"
+          onPress={onSavePolicy}
+          loading={isSaving}
+          disabled={isSaving || isLimitInvalid || !hasChanges}
+          style={styles.saveButton}
+        >
+          {hasChanges ? "Save policy changes" : "No changes to save"}
+        </Button>
       </Card>
 
-      {/* Info Card */}
       <Card style={styles.infoCard}>
-        <MaterialCommunityIcons name="information" size={20} color={colors.primaryLight} />
+        <MaterialCommunityIcons name="information-outline" size={20} color={colors.primaryLight} />
         <Text variant="muted" style={styles.infoText}>
           Policy changes require biometric authentication. Your policy is stored both
-          locally and synced to the blockchain for transparency.
+          locally and synced on-chain for transparency.
         </Text>
       </Card>
     </ScrollView>
@@ -368,93 +400,177 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    borderRadius: radii.xl,
-    padding: spacing.xl,
+    borderRadius: radii['2xl'],
+    padding: spacing.lg,
     backgroundColor: colors.backgroundSecondary,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    gap: spacing.md,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radii.full,
+    backgroundColor: colors.backgroundTertiary,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  headerTop: {
+  backLabel: {
+    fontSize: typography.sizeSm,
+    color: colors.foregroundMuted,
+  },
+  headerTitleBlock: {
+    gap: spacing.xs,
+  },
+  headerSubtitle: {
+    fontSize: typography.sizeSm,
+    lineHeight: 18,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: spacing.xs,
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderRadius: radii.full,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderWidth: 1,
   },
-  closeButton: {
-    padding: spacing.xs,
+  statusBadgeActive: {
+    backgroundColor: colors.successMuted,
+    borderColor: colors.success,
   },
-  headerContent: {
-    alignItems: "center",
+  statusBadgePaused: {
+    backgroundColor: colors.errorMuted,
+    borderColor: colors.error,
   },
-  statsRow: {
-    flexDirection: "row",
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: radii.full,
+  },
+  statusDotActive: {
+    backgroundColor: colors.success,
+  },
+  statusDotPaused: {
+    backgroundColor: colors.error,
+  },
+  statusBadgeText: {
+    fontSize: typography.sizeSm,
+    fontWeight: typography.weightSemibold,
+  },
+  summaryCard: {
+    padding: spacing.lg,
     gap: spacing.md,
   },
-  statCard: {
-    flex: 1,
-    padding: spacing.md,
-    alignItems: "center",
-    borderWidth: 1,
-    backgroundColor: 'rgba(24, 24, 27, 0.4)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+  summaryTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  statValue: {
-    fontSize: typography.sizeLg,
+  summaryTitle: {
+    fontSize: typography.sizeSm,
+    color: colors.foregroundMuted,
+  },
+  summaryUsage: {
+    fontSize: typography.sizeSm,
+    color: colors.primaryLight,
+    fontWeight: typography.weightSemibold,
+  },
+  summaryAmount: {
+    fontSize: typography.sizeXl,
     fontWeight: typography.weightBold,
-    marginTop: spacing.xs,
     fontFamily: typography.fontMono,
+    color: colors.foreground,
   },
-  statLabel: {
+  progressTrack: {
+    height: 8,
+    borderRadius: radii.full,
+    overflow: 'hidden',
+    backgroundColor: colors.backgroundTertiary,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: radii.full,
+    backgroundColor: colors.secondary,
+  },
+  summaryMetaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  metaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.backgroundTertiary,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  metaChipText: {
     fontSize: typography.sizeXs,
     color: colors.foregroundMuted,
-    marginTop: spacing.xs,
   },
-  policyCard: {
-    padding: spacing.xl,
-    gap: spacing.lg,
-    backgroundColor: 'rgba(24, 24, 27, 0.4)',
+  sectionCard: {
+    padding: spacing.lg,
+    gap: spacing.md,
+    backgroundColor: 'transparent',
+  },
+  sectionHeading: {
+    fontSize: typography.sizeBase,
+    fontWeight: typography.weightSemibold,
+    color: colors.foreground,
+  },
+  sectionSubtitle: {
+    fontSize: typography.sizeSm,
+    color: colors.foregroundMuted,
+    lineHeight: 18,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionCounter: {
+    fontSize: typography.sizeXs,
+    color: colors.primaryLight,
+    fontWeight: typography.weightSemibold,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    backgroundColor: colors.primaryMuted,
   },
   inputGroup: {
     gap: spacing.sm,
-  },
-  inputLabel: {
-    fontSize: typography.sizeSm,
-    fontWeight: typography.weightMedium,
   },
   errorHelper: {
     color: colors.error,
     fontSize: typography.sizeSm,
   },
-  sectionDivider: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: typography.sizeXs,
-    fontWeight: typography.weightSemibold,
-    color: colors.primaryLight,
-    letterSpacing: 2,
-    textTransform: "uppercase",
+  helperText: {
+    color: colors.foregroundMuted,
+    fontSize: typography.sizeSm,
   },
   toggleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    backgroundColor: 'rgba(24, 24, 27, 0.4)',
+    backgroundColor: colors.backgroundTertiary,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: colors.border,
     marginBottom: spacing.sm,
   },
   toggleRowActive: {
-    backgroundColor: 'rgba(168, 85, 247, 0.08)',
-    borderColor: 'rgba(168, 85, 247, 0.2)',
+    backgroundColor: colors.primaryMuted,
+    borderColor: colors.primary,
   },
   toggleRowLeft: {
     flexDirection: "row",
@@ -510,8 +626,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  actionsCard: {
+    padding: spacing.lg,
+    gap: spacing.md,
+    backgroundColor: 'transparent',
+  },
+  changeHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  changeHintText: {
+    fontSize: typography.sizeSm,
+    fontWeight: typography.weightMedium,
+  },
   saveButton: {
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
   },
   messageError: {
     flexDirection: "row",
@@ -546,7 +676,7 @@ const styles = StyleSheet.create({
   syncInfo: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     gap: spacing.sm,
   },
   syncLabel: {
@@ -561,7 +691,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: spacing.md,
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   infoText: {
     flex: 1,

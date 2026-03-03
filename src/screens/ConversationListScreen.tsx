@@ -6,6 +6,7 @@ import { Button, Card, Text } from '../components/ui';
 import { type RootStackParamList } from '../navigators/AppNavigator';
 import { useConversationThreads } from '../hooks/useConversationThreads';
 import { useAuthorization } from '../utils/useAuthorization';
+import { createNewThreadId } from '../utils/thread-id';
 import { colors, radii, spacing, typography } from '../theme/shadcn-theme';
 
 function formatUpdatedAt(updatedAt: number) {
@@ -24,7 +25,7 @@ export function ConversationListScreen() {
   }
 
   function startNewConversation() {
-    navigation.navigate('Chat');
+    navigation.navigate('Chat', { threadId: createNewThreadId(pubkey) });
   }
 
   return (
