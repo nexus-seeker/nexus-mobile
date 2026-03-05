@@ -15,6 +15,31 @@ export interface StepEvent {
   message?: string;
 }
 
+export const REJECTION_RECOVERY_ACTION_TYPES = [
+  'retry_intent',
+  'open_policy',
+  'open_onboarding',
+] as const;
+
+export type RejectionRecoveryActionType =
+  (typeof REJECTION_RECOVERY_ACTION_TYPES)[number];
+
+export interface RejectionRecoveryActionDto {
+  id?: string;
+  label?: string;
+  type?: RejectionRecoveryActionType;
+  intent?: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface RejectionRecoveryDto {
+  summary?: string;
+  likelyIntent?: string;
+  suggestedActions?: RejectionRecoveryActionDto[];
+  recommendedActionId?: string;
+  technicalReason?: string;
+}
+
 export interface AgentRunResult {
   runId: string;
   steps: StepEvent[];
@@ -25,6 +50,7 @@ export interface AgentRunResult {
     reason: string;
     policyField: string;
   };
+  recovery?: RejectionRecoveryDto;
   simulation?: {
     fee: number;
     outAmount: number;

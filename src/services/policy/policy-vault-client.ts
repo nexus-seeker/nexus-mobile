@@ -309,6 +309,26 @@ function parsePolicyVaultPayload(payload: Uint8Array): PolicyState {
     }
   }
 
+  // protocol_caps: Vec<ProtocolCap>
+  assertRemaining(data, offset, 4);
+  const protocolCapsCount = data.readUInt32LE(offset);
+  offset += 4;
+
+  for (let index = 0; index < protocolCapsCount; index += 1) {
+    assertRemaining(data, offset, 4);
+    const protocolLength = data.readUInt32LE(offset);
+    offset += 4;
+
+    assertRemaining(data, offset, protocolLength);
+    offset += protocolLength; // protocol
+
+    assertRemaining(data, offset, 8);
+    offset += 8; // max_lamports
+
+    assertRemaining(data, offset, 8);
+    offset += 8; // current_spend
+  }
+
   assertRemaining(data, offset, 8);
   offset += 8; // next_receipt_id
 

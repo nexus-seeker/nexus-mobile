@@ -1,13 +1,15 @@
 import { Account, useAuthorization } from "../../utils/useAuthorization";
 import { useMobileWallet } from "../../utils/useMobileWallet";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, type NavigationProp } from "@react-navigation/native";
 import { ellipsify } from "../../utils/ellipsify";
+import { createNewThreadId } from "../../utils/thread-id";
 import { useState } from "react";
 import * as Clipboard from "expo-clipboard";
 import { Linking, Pressable, StyleSheet, View, Text as RNText } from "react-native";
 import { useCluster } from "../cluster/cluster-data-access";
 import { Button, Text } from "../ui";
 import { colors, spacing } from "../../theme/shadcn-theme";
+import { type RootStackParamList } from "../../navigators/AppNavigator";
 
 export function TopBarWalletButton({
   selectedAccount,
@@ -31,13 +33,15 @@ export function TopBarWalletButton({
 }
 
 export function TopBarSettingsButton() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { selectedAccount } = useAuthorization();
+  const pubkey = selectedAccount?.publicKey.toBase58();
   return (
     <Button
       variant="ghost"
       size="sm"
       onPress={() => {
-        navigation.navigate("Chat" as never);
+        navigation.navigate("Chat", { threadId: createNewThreadId(pubkey) });
       }}
     >
       Settings

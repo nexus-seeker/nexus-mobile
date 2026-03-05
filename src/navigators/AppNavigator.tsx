@@ -1,11 +1,11 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { StatusBar } from "expo-status-bar";
+import { createNewThreadId } from "../utils/thread-id";
 import { WalletConnectScreen } from "../screens/WalletConnectScreen";
 import { OnboardingScreen } from "../screens/OnboardingScreen";
 
 import {
-  ConversationListScreen,
   ChatScreen,
   PolicyScreen,
   ProfileScreen,
@@ -27,7 +27,6 @@ import {
 export type RootStackParamList = {
   WalletConnect: undefined;
   Onboarding: undefined;
-  ConversationList: undefined;
   Chat: { threadId?: string; recommendationId?: string } | undefined;
   Policy: undefined;
   Profile: undefined;
@@ -62,26 +61,19 @@ const AppStack = () => {
       >
         {(props) => (
           <OnboardingScreen
-            onComplete={() => props.navigation.replace("ConversationList")}
+            onComplete={() => props.navigation.replace("Chat", { threadId: createNewThreadId() })}
           />
         )}
       </Stack.Screen>
 
-      {/* Step 3: choose conversation thread */}
-      <Stack.Screen
-        name="ConversationList"
-        component={ConversationListScreen}
-        options={{ headerShown: false, gestureEnabled: false }}
-      />
-
-      {/* Step 4: pure agent UX */}
+      {/* Step 3: pure agent UX */}
       <Stack.Screen
         name="Chat"
         component={ChatScreen}
         options={{ headerShown: false, gestureEnabled: false }}
       />
 
-      {/* Step 5: modal slide-ups */}
+      {/* Step 4: modal slide-ups */}
       <Stack.Group screenOptions={{ presentation: "modal", headerShown: false }}>
         <Stack.Screen name="Policy" component={PolicyScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
